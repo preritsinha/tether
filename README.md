@@ -1,5 +1,7 @@
 # Tether - Real-time Location Sharing 🚀
 
+url - https://tether-map.onrender.com
+
 Ever tried coordinating with friends when everyone's driving to the same place? Too many "where are you?" texts, everyone's late, and nobody knows who's actually close.
 
 **Tether fixes that.** Drop a pin, share a link, and everyone can see each other on a live map. Simple as that.

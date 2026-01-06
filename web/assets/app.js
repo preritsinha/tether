@@ -5,7 +5,7 @@ const getApiBase = () => {
     // Production: Update with your actual domain
     if (window.location.hostname.includes('onrender.com')) {
         // Update this with your actual backend URL
-        return 'https://your-backend-url.onrender.com';  // Your production URL
+        return 'https://tether-map.onrender.com';  // Your production URL
     }
     
     // Local development
