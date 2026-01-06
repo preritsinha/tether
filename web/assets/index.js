@@ -38,7 +38,7 @@ async function createRoom() {
         const resultDiv = document.getElementById('createResult');
         resultDiv.innerHTML = `
             <div style="padding: 16px; background: #e8f5e9; border-radius: 8px;">
-                <h3>✅ Room Created!</h3>
+                <h3>Room Created!</h3>
                 <p><strong>Code:</strong> ${roomData.room_id}</p>
                 <p><strong>Invite Link:</strong></p>
                 <input type="text" readonly value="${window.location.origin}?room=${roomData.room_id}" 
@@ -47,7 +47,7 @@ async function createRoom() {
                 <input type="text" id="creatorName" placeholder="Your name" 
                        style="width: 100%; padding: 8px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px;">
                 <button class="btn btn-primary" onclick="joinCreatedRoom('${roomData.room_id}')">
-                    🗺️ Join Room
+                    Join Room
                 </button>
             </div>
         `;
