@@ -1,344 +1,200 @@
-# Tether - Real-time Location Sharing 🚀
+# Waysera — Every journey, together.
 
-url - https://tether-map.onrender.com
+Waysera is a lightweight live group-navigation app for people heading to the same destination. Start a temporary journey, share a link or six-character code, and see your group on one live map — no account required.
 
-Ever tried coordinating with friends when everyone's driving to the same place? Too many "where are you?" texts, everyone's late, and nobody knows who's actually close.
-
-**Tether fixes that.** Drop a pin, share a link, and everyone can see each other on a live map. Simple as that.
-
-**Live Demo:** Coming soon (deploy to your own Render.com instance)
+It is built so that **the server cannot see your journey**. Positions, names, messages and destinations are encrypted on your device; the server forwards bytes it has no way to read, and stores nothing at all.
 
 ---
 
-## ✨ Features
+## What it does
 
-### Core Functionality
-- 📍 **Real-time tracking** - See up to 10 people on a live map
-- 🔗 **No signup needed** - Create a room and share the link
-- ⏰ **Auto-expiring rooms** - Rooms close after 3 hours automatically
-- 📱 **Mobile-optimized** - Built for phones and driving scenarios
-- 🎭 **Demo mode** - Test without location access
+- **Live group map** — everyone's position, speed, heading, and how far each person is from you and from the destination.
+- **Journey codes** — six characters, no signup. Share a link or read the code out loud.
+- **Turn-by-turn navigation** — with voice guidance and automatic rerouting.
+- **Quick messages** — tap to send "Pulling over", "Need fuel", "Go ahead without me". Tap-only, so nobody types while driving.
+- **Journey replay** — scrub back through a finished journey at 1x to 10x, with everything that happened on a timeline.
+- **Export** — take a journey away as JSON or GPX.
 
-### Navigation
-- 🧭 **Turn-by-turn navigation** - Full-screen professional nav mode
-- 🛣️ **Lane guidance** - See which lane to use before turns
-- 📍 **Animated markers** - Pulsing location indicator with heading
-- 🔄 **Auto-rerouting** - Recalculates if you go off course
-- 🏁 **Arrival detection** - Celebration notification when you arrive
-- ⚡ **60fps animations** - Buttery smooth on all devices
-
-### Maps & UI
-- 🗺️ **Mapbox integration** - High-quality professional street maps
-- 🎨 **Modern design** - Sleek dark theme with glassmorphic UI
-- 📊 **Live stats** - Distance, ETA, speed tracking
-- 🌓 **Dark mode** - Follows system preference
+Everything is stored on your device. Journeys you have finished stay in a list until you delete them.
 
 ---
 
-## 🚀 Quick Start
+## How the privacy works
 
-### Using the Start Script (Easiest)
+The server is a **relay**, not a database:
+
+```
+Client A ──encrypted──┐                    ┌──encrypted── Client B
+                      ├─→  Waysera relay  ─┤
+Client C ──encrypted──┘   (forwards bytes) └──encrypted── Client D
+```
+
+Each journey has a key that is generated on the device that created it. That key travels in the **fragment** of the invite link — the part after `#`, which browsers never send to any server. The relay only ever sees an opaque channel identifier and encrypted payloads it cannot open.
+
+Joining by typing a code rather than opening a link means you have no key yet, so an existing member has to grant you one. That exchange requires somebody to look at your name and tap **Allow**.
+
+### What this does not mean
+
+Waysera cannot see your journey. That is not the same as your location never leaving your device, and it would be dishonest to claim otherwise:
+
+| Service | What it receives |
+| --- | --- |
+| Mapbox | Tile requests, revealing the area you are looking at |
+| Nominatim | Every destination search |
+| openstreetmap.de | Origin **and** destination for every route |
+
+Replacing these with self-hosted equivalents is on the roadmap, not in the product today.
+
+We also do not claim: guaranteed security, suitability for emergencies, background tracking while the browser is closed, or unlimited group size.
+
+---
+
+## Running it locally
 
 ```bash
 ./start.sh
 ```
 
-This automatically opens backend and frontend in separate terminals.
+That opens the relay and the web client in separate terminal windows. To stop:
 
-### Manual Setup
+```bash
+./stop.sh
+```
 
-**Backend:**
+### Manually
+
+**Relay:**
+
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**Frontend** (separate terminal):
+**Web client**, in a second terminal:
+
 ```bash
 cd web
-python -m http.server 3000
+python3 -m http.server 3000
 ```
 
-Open: `http://localhost:3000`
+Then open `http://localhost:3000`.
 
-### 📱 Testing on Mobile
-
-1. Get your computer's IP: `ifconfig` (Mac/Linux) or `ipconfig` (Windows)
-2. Start backend with `--host 0.0.0.0`
-3. On your phone, visit: `http://YOUR_IP:3000`
-4. Make sure phone and computer are on the same WiFi
-
-**Note:** Mobile browsers require HTTPS for geolocation. For local testing, use Safari on iOS or deploy to Render.com for automatic HTTPS.
+Note that WebCrypto and IndexedDB both require a secure context. `localhost` counts as one; a bare LAN IP does not, so testing on a phone over Wi-Fi needs HTTPS.
 
 ---
 
-## 🏗️ Project Structure
+## Project structure
 
 ```
-tether/
-├── backend/              # FastAPI server
-│   ├── main.py          # API routes + WebSocket
-│   ├── services/        # Business logic
-│   │   ├── room_service.py
-│   │   ├── ws_manager.py
-│   │   └── geo.py       # Distance calculations
-│   ├── storage/         # In-memory data store
-│   └── utils/           # Helpers
+waysera/
+├── backend/                 # The relay. It stores nothing.
+│   ├── main.py              # Health check + WebSocket relay
+│   ├── services/relay.py    # Channel registry and limits
+│   └── tests/               # pytest
 │
-├── web/                 # Frontend (no build step!)
-│   ├── index.html       # Main HTML
+├── web/                     # Client. No build step.
+│   ├── index.html
+│   ├── replay.html
+│   ├── tests.html           # Browser test runner
 │   └── assets/
-│       ├── app.js       # Config
-│       ├── config.js    # Mapbox token
-│       ├── index.js     # Main app logic
-│       └── app-mobile.css  # Styles
+│       ├── crypto.js        # AES-GCM, ECDH handoff, invite links
+│       ├── journey.js       # Relay session and protocol
+│       ├── store.js         # IndexedDB
+│       ├── validate.js      # Peer input validation
+│       ├── export.js        # JSON and GPX
+│       ├── replay.js        # Playback
+│       ├── index.js         # App
+│       └── app-mobile.css   # Design system
 │
-├── start.sh             # Easy startup script
-└── stop.sh              # Cleanup script
+├── tools/                   # Test harnesses
+├── BRAND.md                 # Brand source of truth
+├── start.sh
+└── stop.sh
 ```
 
 ---
 
-## 🎯 How to Use
+## The relay API
 
-### Create a Room
-1. Open the app
-2. Search for a destination (or enter coordinates)
-3. Click "Create Room"
-4. Share the room code or link
+Two endpoints. That is the whole surface.
 
-### Join a Room
-1. Open the shared link or enter the room code
-2. Enter your name
-3. Allow location permission
-4. You'll see everyone on the map!
+```http
+GET /v1/health
+```
 
-### Start Navigation
-1. Click **"🧭 Start Navigation"**
-2. Full-screen navigation mode activates
-3. Follow turn-by-turn directions
-4. Tap "X" to exit navigation
+```
+WS /v1/relay/{channel_id}
+```
 
-**Testing Tip:** Open 2-3 incognito windows, join the same room with different names, and enable demo mode to see simulated movement.
+`channel_id` is the lowercase SHA-256 of a journey code, computed on the client, so the code itself never reaches the server. Anything that is not a 64-character hex digest is refused.
+
+Every frame received is forwarded verbatim to the channel's other sockets and to nobody else. The sender never receives its own frames back. The relay never parses, logs, or retains a payload.
+
+Limits: 64 KB per frame, 20 messages per second per socket, 10 sockets per channel.
 
 ---
 
-## ⚙️ Configuration
-
-### Frontend (`web/assets/config.js`)
-
-```javascript
-const TETHER_CONFIG = {
-    MAPBOX_TOKEN: 'your_mapbox_token_here',
-    USE_MAPBOX_ON_LOCALHOST: false
-};
-```
-
-### Backend (`.env` file)
+## Tests
 
 ```bash
-FRONTEND_ORIGIN=http://localhost:3000
-ROOM_TTL_SECONDS=10800  # 3 hours
+# Relay
+cd backend && .venv/bin/python -m pytest
+
+# Crypto, storage, validation, session, export, replay — runs in real Chrome
+python3 tools/run_browser_tests.py
+
+# Loads the actual page and drives a journey creation
+backend/.venv/bin/python tools/smoke_app.py
+
+# Two headless browsers and a live relay, end to end
+backend/.venv/bin/python tools/integration_test.py
 ```
 
-### Mapbox Setup
+The browser suites run in Chrome rather than Node on purpose: the code under test needs WebCrypto **and** IndexedDB, and IndexedDB has no faithful Node equivalent — a polyfill would be testing the polyfill.
 
-1. Get a token at: https://account.mapbox.com/access-tokens/
-2. Add to `web/assets/config.js`
-3. Set URL restrictions:
-   - `https://your-domain.com/*`
-   - `http://localhost:*` (for local testing)
+The integration test also asserts the property everything else rests on. It joins a live journey as an unauthorised third party and checks that what crosses the wire is unreadable.
 
 ---
 
-## 🌐 API Reference
+## Deploying
 
-### Create Room
-```http
-POST /rooms
-Content-Type: application/json
+**Relay** — a Render web service, root directory `backend`, start command:
 
-{
-  "destination_name": "Central Park",
-  "destination_lat": 40.7829,
-  "destination_lng": -73.9654,
-  "duration_minutes": 180
-}
+```
+uvicorn main:app --host 0.0.0.0 --port $PORT
 ```
 
-### Join Room
-```http
-POST /rooms/{room_id}/join
+Set `ALLOWED_ORIGINS` to your frontend origin. Note that WebSocket upgrades are not subject to CORS, and the relay uses no cookies or credentials, so this only covers the health check.
 
-{"name": "Alice"}
-```
+**Web client** — a Render static site, root directory `web`, publish directory `.`.
 
-### Get Room State
-```http
-GET /rooms/{room_id}
-```
-
-### End Room
-```http
-POST /rooms/{room_id}/end
-```
-
-### WebSocket
-```
-WS /ws/rooms/{room_id}?token={member_token}
-```
-
-Clients send location updates every 3 seconds. Server broadcasts updates every second.
+Before switching domains, add the new one to the Mapbox token's URL restrictions. The token in `web/assets/config.js` is a publishable `pk.` token: it is served to every visitor by design, and URL restrictions — not secrecy — are what protect it.
 
 ---
 
-## 🚢 Deploying to Render
+## Limitations
 
-### Backend (Web Service)
-1. Create new **Web Service**
-2. Connect your GitHub repo
-3. Settings:
-   - **Root Directory:** `backend`
-   - **Build Command:** `pip install -r requirements.txt`
-   - **Start Command:** `uvicorn main:app --host 0.0.0.0 --port 10000`
-4. Environment Variables:
-   - `FRONTEND_ORIGIN=https://your-frontend-url.onrender.com`
-5. Deploy
-
-### Frontend (Static Site)
-1. Create new **Static Site**
-2. Connect your GitHub repo
-3. Settings:
-   - **Root Directory:** `web`
-   - **Publish Directory:** `.`
-4. Update `web/assets/app.js`:
-   ```javascript
-   API_BASE: 'https://your-backend-url.onrender.com'
-   ```
-5. Deploy
-
-**Both services work on Render's free tier!**
+- **Background tracking is not possible on the web.** Browsers suspend geolocation when a tab is hidden. A wake lock keeps the screen alive during navigation; only a native app solves the rest.
+- **Journey expiry is advisory.** With no server, nothing enforces it.
+- **Nothing survives losing your device.** There is no copy anywhere else. That is the trade for the privacy model — export a journey if you want to keep it.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech
 
-- **Backend:** FastAPI, Python 3.9+, WebSockets, Uvicorn
-- **Frontend:** Vanilla JavaScript (no framework!)
-- **Maps:** Leaflet.js + Mapbox tiles
-- **Routing:** Leaflet Routing Machine + OSRM
-- **Storage:** In-memory (for MVP)
-- **Deployment:** Render.com
-
-### Why These Choices?
-
-- **FastAPI** - Built-in WebSocket support, fast, easy to deploy
-- **Vanilla JS** - No build step, works everywhere, lightweight
-- **Leaflet** - Powerful, flexible, open-source
-- **Mapbox** - Professional quality maps, generous free tier
-- **In-memory** - Simple for MVP, easy to replace with Redis/Postgres later
+FastAPI and WebSockets on the relay. Vanilla JavaScript on the client, with no framework and no build step. Leaflet with Mapbox tiles, OSRM routing, WebCrypto and IndexedDB.
 
 ---
 
-## 🐛 Troubleshooting
+## License
 
-### Backend won't connect
-- Check `API_BASE` in `app.js` matches your backend URL
-- Verify CORS settings in `backend/main.py`
-- Check backend logs: `docker logs` or Render dashboard
-
-### WebSocket errors
-- Production must use `wss://` not `ws://`
-- Render handles this automatically
-- Check browser console (F12) for errors
-
-### Location permission denied
-- **Mobile browsers require HTTPS** for geolocation
-- Local testing: Use Safari on iOS
-- Or deploy to Render.com for automatic HTTPS
-
-### Map tiles not loading
-- Check Mapbox token is valid
-- Verify URL restrictions on mapbox.com
-- Check browser network tab for 401/403 errors
-
-### Rooms disappearing
-- Rooms are stored in memory
-- Server restart = rooms gone
-- This is by design for MVP
-- Add Redis/Postgres for persistence
-
-### Navigation not working
-- Check routing service is accessible
-- Currently using: `routing.openstreetmap.de`
-- Browser console shows routing errors
-- Fallback: Shows direct route line if service is down
+MIT.
 
 ---
 
-## 🔒 Security
+*Waysera was previously developed under the working name Tether.*
 
-This is an MVP with basic security:
-
-✅ **Included:**
-- Random tokens for each user
-- 6-character room codes
-- CORS validation
-- Token-based WebSocket auth
-- URL restrictions on Mapbox token
-
-❌ **Not Included (for production):**
-- User authentication / OAuth
-- Rate limiting
-- Encryption at rest
-- Database persistence
-- Audit logging
-- Input sanitization beyond basics
-
-**Don't use this for sensitive data.** It's meant for casual friend tracking, not military ops.
-
-For production, add:
-1. Proper authentication (OAuth2, JWT)
-2. Rate limiting (Redis + middleware)
-3. Database encryption
-4. HTTPS everywhere
-5. Security headers
-6. Input validation library
-
----
-
-## 🚀 What's Next?
-
-To productionize this:
-
-1. **Persistence:** Replace in-memory with Postgres/Redis
-2. **Auth:** Add proper user accounts with OAuth
-3. **Mobile App:** React Native version
-4. **Offline Mode:** Cache maps and work offline
-5. **Analytics:** Track usage, routes, popular destinations
-6. **Notifications:** Push notifications for arrivals
-7. **History:** Save past trips and routes
-8. **Groups:** Support for larger groups (>10 people)
-9. **Privacy:** Fine-grained location sharing controls
-10. **Monetization:** Premium features, remove ads
-
----
-
-## 📄 License
-
-MIT License - Do whatever you want with it!
-
----
-
-## 💬 Questions?
-
-- Check browser console (F12) - detailed logs everywhere
-- Check backend logs - verbose error messages
-- Open an issue on GitHub
-
----
-
-**Built with ❤️ for people who are tired of "where are you?" texts**
+Built for people who are tired of asking, "Where are you?"

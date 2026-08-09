@@ -21,9 +21,9 @@ let destMarker = null;
 let routingControls = {};
 let showDirections = false;
 
-// Geolocation and demo mode used to share one variable, which meant leaveRoom()
-// called clearInterval on a watchPosition id and silently left GPS running.
-// They are separate handles now, cleared with the matching API.
+// Geolocation and demo mode once shared a single variable, so leaving a journey
+// called clearInterval on a watchPosition id — which does nothing — and left GPS
+// running. They are separate handles now, each cleared with its matching API.
 let geoWatchId = null;
 let demoIntervalId = null;
 let demoMode = false;
