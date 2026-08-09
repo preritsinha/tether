@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "Waysera — Live Group Navigation",
+  "short_name": "Waysera",
+  "description": "Create a journey, share a code, and navigate together.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#4F46E5",
+  "background_color": "#F8FAFC",
+  "categories": ["navigation", "travel", "utilities"],
+  "icons": [
+    {
+      "src": "assets/brand/waysera-app-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ]
+}

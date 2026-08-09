@@ -5,8 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#007AFF">
-    <title>Tether - Real-time Location Sharing</title>
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#4F46E5">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B1120">
+
+    <title>Waysera — Live Group Navigation</title>
+    <meta name="description" content="Create a journey, share a code, and see your group move toward the same destination in real time.">
+    <meta name="application-name" content="Waysera">
+    <meta name="apple-mobile-web-app-title" content="Waysera">
+
+    <meta property="og:title" content="Waysera — Every journey, together.">
+    <meta property="og:description" content="Live group navigation for people heading to the same destination.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Waysera">
+    <!-- og:image intentionally omitted until a real asset is deployed at a public URL. -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Waysera — Every journey, together.">
+    <meta name="twitter:description" content="Live group navigation for people heading to the same destination.">
+
+    <link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="manifest.webmanifest">
+
     <link rel="stylesheet" href="assets/app-mobile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css">
@@ -135,8 +153,18 @@
 <body>
     <div id="homePage" class="page">
         <div class="container">
-            <h1>Tether</h1>
-            <p class="subtitle">Share your location in real-time with your friends</p>
+            <div class="brand-lockup">
+                <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                    <path d="M4 12 L10.5 24 L16 10.5 L21.5 24 L28 12"
+                          stroke="currentColor" stroke-width="3"
+                          stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="16" cy="9.5" r="3.25" fill="currentColor"/>
+                </svg>
+                <h1 class="brand-name">Way<span class="brand-name-accent">sera</span></h1>
+                <p class="brand-tagline">Every journey, together.</p>
+                <p class="brand-description">Start a shared journey, invite your group, and see everyone move toward the same destination.</p>
+                <p class="brand-trust-line">No signup · Live location · Temporary journeys</p>
+            </div>
             <!-- CREATE ROOM SECTION -->
             <div class="form-section">
                 <h2>Create a Room</h2>
@@ -216,17 +244,18 @@
         </div>
 
         <!-- Location Permission Banner -->
-        <div id="locationBanner" style="display: none; position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 250; width: calc(100% - 32px); max-width: 420px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); text-align: center;">
-                <div style="font-size: 32px; margin-bottom: 8px;">📍</div>
-                <div style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">Location Permission Needed</div>
-                <div style="font-size: 13px; opacity: 0.9; margin-bottom: 12px;">Enable location to see your real position on the map</div>
-                <button onclick="requestLocationPermission()" style="background: white; color: #667eea; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;">
-                    Enable Location
-                </button>
-                <button onclick="dismissLocationBanner()" style="background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5); padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; margin-left: 8px;">
-                    Use Demo Mode
-                </button>
+        <div id="locationBanner" class="location-banner" style="display: none;">
+            <div class="location-banner-card">
+                <div class="location-banner-title">Share your location for this journey</div>
+                <div class="location-banner-body">Location access lets your group see where you are while the journey is active.</div>
+                <div class="location-banner-actions">
+                    <button type="button" class="btn-banner-primary" onclick="requestLocationPermission()">
+                        Enable Location
+                    </button>
+                    <button type="button" class="btn-banner-secondary" onclick="dismissLocationBanner()">
+                        Use Demo Mode
+                    </button>
+                </div>
             </div>
         </div>
 

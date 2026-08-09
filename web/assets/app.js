@@ -2,10 +2,11 @@
 
 // Auto-detect API base URL
 const getApiBase = () => {
-    // Production: Update with your actual domain
     if (window.location.hostname.includes('onrender.com')) {
-        // Update this with your actual backend URL
-        return 'https://tether-backend-ivfz.onrender.com';  // Your production URL
+        // LEGACY URL — the Render service has not been renamed yet, and renaming it
+        // before the new backend is live would break production. Update this only
+        // after the Waysera service is deployed and verified.
+        return 'https://tether-backend-ivfz.onrender.com';
     }
     
     // Local development
@@ -32,7 +33,7 @@ const CONFIG = {
     DEMO_RADIUS_KM: 5                         // Move in a 5km circle around destination
 };
 
-console.log('📍 Tether Config:', CONFIG.API_BASE);
+console.log('Waysera config:', CONFIG.API_BASE);
 
 // ============= UTILITIES =============
 

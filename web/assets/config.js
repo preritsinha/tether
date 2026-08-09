@@ -1,14 +1,13 @@
-// Configuration for Tether Map
-// This file can be easily modified for different environments
+// Waysera runtime configuration.
+// Kept as a plain script so the app needs no build step.
 
-const TETHER_CONFIG = {
-    // Mapbox token - Set URL restrictions at mapbox.com/account/access-tokens
+const WAYSERA_CONFIG = {
+    // Mapbox token. URL restrictions are set at mapbox.com/account/access-tokens —
+    // add the Waysera domain there BEFORE switching production domains.
     MAPBOX_TOKEN: 'pk.eyJ1IjoicHJlcml0c2luaGEiLCJhIjoiY21rMmo3dnRrMGdoNzNjc2I4dXd3ZHFxayJ9.XfdNuGp4DPvzEA5hVqY2YA',
-    
+
     // Map settings
-    USE_MAPBOX_ON_LOCALHOST: false, // Set to true if you add localhost to token restrictions
+    USE_MAPBOX_ON_LOCALHOST: false, // true only if localhost is added to the token restrictions
 };
 
-// Export for use in other scripts
-window.TETHER_CONFIG = TETHER_CONFIG;
-
+window.WAYSERA_CONFIG = WAYSERA_CONFIG;

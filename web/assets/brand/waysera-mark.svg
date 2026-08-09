@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" width="32" height="32">
+  <!-- Waysera mark: two routes rise from separate origins and converge on one destination. -->
+  <path d="M4 12 L10.5 24 L16 10.5 L21.5 24 L28 12"
+        stroke="currentColor" stroke-width="3"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="16" cy="9.5" r="3.25" fill="currentColor"/>
+</svg>

@@ -268,7 +268,7 @@ function initializeMap() {
         
         // Smart tile selection: OpenStreetMap for localhost (no restrictions), Mapbox for production
         const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const useMapbox = !isLocalhost || (window.TETHER_CONFIG && window.TETHER_CONFIG.USE_MAPBOX_ON_LOCALHOST);
+        const useMapbox = !isLocalhost || (window.WAYSERA_CONFIG && window.WAYSERA_CONFIG.USE_MAPBOX_ON_LOCALHOST);
         
         if (!useMapbox) {
             // Free OpenStreetMap tiles for local testing (no token needed)
@@ -283,7 +283,7 @@ function initializeMap() {
             console.log('🗺️ Using OpenStreetMap tiles (localhost)');
         } else {
             // Mapbox for production - Token stored in config.js
-            const MAPBOX_TOKEN = window.TETHER_CONFIG ? window.TETHER_CONFIG.MAPBOX_TOKEN : 'pk.eyJ1IjoicHJlcml0c2luaGEiLCJhIjoiY21rMmo3dnRrMGdoNzNjc2I4dXd3ZHFxayJ9.XfdNuGp4DPvzEA5hVqY2YA';
+            const MAPBOX_TOKEN = window.WAYSERA_CONFIG ? window.WAYSERA_CONFIG.MAPBOX_TOKEN : 'pk.eyJ1IjoicHJlcml0c2luaGEiLCJhIjoiY21rMmo3dnRrMGdoNzNjc2I4dXd3ZHFxayJ9.XfdNuGp4DPvzEA5hVqY2YA';
             L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
                 attribution: '© Mapbox © OpenStreetMap',
                 tileSize: 512,
@@ -1556,7 +1556,7 @@ window.toggleBottomSheet = toggleBottomSheet;
 window.startNavigation = startNavigation;
 window.stopNavigation = stopNavigation;
 
-console.log('✅ Tether navigation loaded - version 2.0');
+console.log('✅ Waysera navigation loaded');
 console.log('🧭 Navigation functions available:', typeof window.startNavigation, typeof window.stopNavigation);
 
 // ============= LOCATION PERMISSION HELPERS =============
