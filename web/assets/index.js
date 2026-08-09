@@ -266,11 +266,19 @@ function initializeMap() {
             zoomAnimationThreshold: 4  // Smooth zoom at all levels
         }).setView([destination.lat, destination.lng], 13);
         
-        // Smart tile selection: OpenStreetMap for localhost (no restrictions), Mapbox for production
+        // Tile source: OpenStreetMap locally (no token required), Mapbox in production.
+        // The token lives in exactly one place — WAYSERA_CONFIG in config.js — so
+        // rotating it is a single edit. There is deliberately no hardcoded fallback
+        // copy here; a second copy is how a rotation silently half-applies.
+        const mapboxToken = (window.WAYSERA_CONFIG && window.WAYSERA_CONFIG.MAPBOX_TOKEN) || '';
         const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const useMapbox = !isLocalhost || (window.WAYSERA_CONFIG && window.WAYSERA_CONFIG.USE_MAPBOX_ON_LOCALHOST);
-        
+        const mapboxAllowedHere = !isLocalhost || (window.WAYSERA_CONFIG && window.WAYSERA_CONFIG.USE_MAPBOX_ON_LOCALHOST);
+        const useMapbox = Boolean(mapboxToken) && mapboxAllowedHere;
+
         if (!useMapbox) {
+            if (mapboxAllowedHere && !mapboxToken) {
+                console.warn('No Mapbox token configured — falling back to OpenStreetMap tiles.');
+            }
             // Free OpenStreetMap tiles for local testing (no token needed)
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -282,9 +290,7 @@ function initializeMap() {
             }).addTo(map);
             console.log('🗺️ Using OpenStreetMap tiles (localhost)');
         } else {
-            // Mapbox for production - Token stored in config.js
-            const MAPBOX_TOKEN = window.WAYSERA_CONFIG ? window.WAYSERA_CONFIG.MAPBOX_TOKEN : 'pk.eyJ1IjoicHJlcml0c2luaGEiLCJhIjoiY21rMmo3dnRrMGdoNzNjc2I4dXd3ZHFxayJ9.XfdNuGp4DPvzEA5hVqY2YA';
-            L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
+            L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`, {
                 attribution: '© Mapbox © OpenStreetMap',
                 tileSize: 512,
                 zoomOffset: -1,
