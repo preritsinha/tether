@@ -101,6 +101,17 @@ app.add_middleware(
 )
 
 
+@app.get("/")
+async def root():
+    """Kept deliberately.
+
+    The previous service answered here, and hosting platforms are commonly
+    configured to health-check `/`. Removing it would turn a deploy into a
+    rollback for a reason that has nothing to do with the code.
+    """
+    return {"service": "waysera-relay", "ok": True}
+
+
 @app.get("/v1/health")
 async def health():
     return {"ok": True, "service": "waysera-relay"}

@@ -319,3 +319,11 @@ def test_redaction_leaves_ordinary_messages_alone():
     )
     assert log_filter.filter(record) is True
     assert record.getMessage() == "socket joined (occupancy 3)"
+
+
+def test_root_answers_for_platform_health_checks(client):
+    """Hosting platforms commonly probe `/`. The previous service answered
+    there, so removing it would fail a deploy for a non-code reason."""
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json()["ok"] is True
