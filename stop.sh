@@ -1,29 +1,29 @@
 #!/bin/bash
 
-# Tether Stop Script
+# Waysera stop script
 # Kills any processes running on ports 8000 and 3000
 
-echo "🛑 Stopping Tether..."
+echo "Stopping Waysera..."
 
-# Kill any process using port 8000 (backend)
+# Relay
 BACKEND_PROC=$(lsof -ti:8000 2>/dev/null)
 if [ ! -z "$BACKEND_PROC" ]; then
     kill $BACKEND_PROC 2>/dev/null
-    echo "✅ Killed process on port 8000 (backend)"
+    echo "Stopped the relay on port 8000."
 else
-    echo "⚠️  No process found on port 8000"
+    echo "Nothing running on port 8000."
 fi
 
-# Kill any process using port 3000 (frontend)
+# Web client
 FRONTEND_PROC=$(lsof -ti:3000 2>/dev/null)
 if [ ! -z "$FRONTEND_PROC" ]; then
     kill $FRONTEND_PROC 2>/dev/null
-    echo "✅ Killed process on port 3000 (frontend)"
+    echo "Stopped the web client on port 3000."
 else
-    echo "⚠️  No process found on port 3000"
+    echo "Nothing running on port 3000."
 fi
 
 echo ""
-echo "✅ Tether stopped"
+echo "Waysera stopped."
 
 

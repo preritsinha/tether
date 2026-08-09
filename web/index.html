@@ -5,8 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#007AFF">
-    <title>Tether - Real-time Location Sharing</title>
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#4F46E5">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B1120">
+
+    <title>Waysera — Live Group Navigation</title>
+    <meta name="description" content="Create a journey, share a code, and see your group move toward the same destination in real time.">
+    <meta name="application-name" content="Waysera">
+    <meta name="apple-mobile-web-app-title" content="Waysera">
+
+    <meta property="og:title" content="Waysera — Every journey, together.">
+    <meta property="og:description" content="Live group navigation for people heading to the same destination.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Waysera">
+    <!-- og:image intentionally omitted until a real asset is deployed at a public URL. -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Waysera — Every journey, together.">
+    <meta name="twitter:description" content="Live group navigation for people heading to the same destination.">
+
+    <link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="manifest.webmanifest">
+
     <link rel="stylesheet" href="assets/app-mobile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css">
@@ -135,20 +153,30 @@
 <body>
     <div id="homePage" class="page">
         <div class="container">
-            <h1>Tether</h1>
-            <p class="subtitle">Share your location in real-time with your friends</p>
+            <div class="brand-lockup">
+                <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                    <path d="M4 12 L10.5 24 L16 10.5 L21.5 24 L28 12"
+                          stroke="currentColor" stroke-width="3"
+                          stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="16" cy="9.5" r="3.25" fill="currentColor"/>
+                </svg>
+                <h1 class="brand-name">Way<span class="brand-name-accent">sera</span></h1>
+                <p class="brand-tagline">Every journey, together.</p>
+                <p class="brand-description">Start a shared journey, invite your group, and see everyone move toward the same destination.</p>
+                <p class="brand-trust-line">No signup · Live location · Temporary journeys</p>
+            </div>
             <!-- CREATE ROOM SECTION -->
             <div class="form-section">
-                <h2>Create a Room</h2>
+                <h2>Start a journey</h2>
                 
                 <div class="form-group">
-                    <label class="form-label">Destination</label>
+                    <label class="form-label" for="destName">Where are you going?</label>
                     <div class="search-box">
                         <input 
                             type="text" 
                             id="destName" 
                             class="form-control" 
-                            placeholder="Search location (e.g., 'Siddhivinayak', 'Mumbai Station')"
+                            placeholder="Search for a destination"
                             autocomplete="off"
                         >
                         <div id="searchSuggestions" class="search-suggestions"></div>
@@ -168,12 +196,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Duration (minutes)</label>
+                    <label class="form-label" for="duration">Journey duration (minutes)</label>
                     <input type="number" id="duration" class="form-control" placeholder="180" value="180" min="30" max="480">
                 </div>
 
-                <button class="btn btn-primary btn-full" onclick="createRoom()">
-                    Create Room
+                <button type="button" class="btn btn-primary btn-full" onclick="createJourney()">
+                    Start a journey
                 </button>
 
                 <div id="createResult" class="result" style="display: none;"></div>
@@ -181,23 +209,31 @@
 
             <!-- JOIN ROOM SECTION -->
             <div class="form-section">
-                <h2>Join a Room</h2>
+                <h2>Join a journey</h2>
 
                 <div class="form-group">
-                    <label class="form-label">Your Name</label>
+                    <label class="form-label" for="joinName">Your name</label>
                     <input type="text" id="joinName" class="form-control" placeholder="Your name">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Room Code</label>
-                    <input type="text" id="roomCode" class="form-control" placeholder="e.g., ABC123" maxlength="6">
+                    <label class="form-label" for="roomCode">Journey code</label>
+                    <input type="text" id="roomCode" class="form-control" placeholder="ABC234" maxlength="6" autocapitalize="characters" autocomplete="off">
                 </div>
 
-                <button class="btn btn-primary btn-full" onclick="joinRoom()">
-                    Join Room
+                <button type="button" class="btn btn-primary btn-full" onclick="joinJourney()">
+                    Join journey
                 </button>
 
                 <div id="joinResult" class="result" style="display: none;"></div>
+            </div>
+
+            <div class="form-section" id="pastJourneysSection" style="display: none;">
+                <h2>Past journeys</h2>
+                <p class="brand-description" style="max-width: none; text-align: left;">
+                    Stored on this device only. Replays never leave it unless you export one.
+                </p>
+                <div id="pastJourneys" class="journey-list"></div>
             </div>
         </div>
     </div>
@@ -207,26 +243,27 @@
         <div class="room-header">
             <div class="room-info">
                 <h1 id="destNameDisplay">Loading...</h1>
-                <p id="roomCodeDisplay" class="room-code">Code: ...</p>
+                <p id="roomCodeDisplay" class="room-code">Journey code: …</p>
             </div>
             <div class="room-status">
-                <p id="timer" class="timer">3h left</p>
-                <p id="memberCount" class="member-count">1 member</p>
+                <p id="timer" class="timer">…</p>
+                <p id="memberCount" class="member-count">1 person</p>
             </div>
         </div>
 
         <!-- Location Permission Banner -->
-        <div id="locationBanner" style="display: none; position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 250; width: calc(100% - 32px); max-width: 420px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); text-align: center;">
-                <div style="font-size: 32px; margin-bottom: 8px;">📍</div>
-                <div style="font-size: 15px; font-weight: 600; margin-bottom: 8px;">Location Permission Needed</div>
-                <div style="font-size: 13px; opacity: 0.9; margin-bottom: 12px;">Enable location to see your real position on the map</div>
-                <button onclick="requestLocationPermission()" style="background: white; color: #667eea; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;">
-                    Enable Location
-                </button>
-                <button onclick="dismissLocationBanner()" style="background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5); padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; margin-left: 8px;">
-                    Use Demo Mode
-                </button>
+        <div id="locationBanner" class="location-banner" style="display: none;">
+            <div class="location-banner-card">
+                <div class="location-banner-title">Share your location for this journey</div>
+                <div class="location-banner-body">Location access lets your group see where you are while the journey is active.</div>
+                <div class="location-banner-actions">
+                    <button type="button" class="btn-banner-primary" onclick="requestLocationPermission()">
+                        Enable Location
+                    </button>
+                    <button type="button" class="btn-banner-secondary" onclick="dismissLocationBanner()">
+                        Use Demo Mode
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -248,11 +285,6 @@
                     </div>
                 </div>
                 
-                <!-- Lane Guidance -->
-                <div id="laneGuidance" class="lane-guidance" style="display: none;">
-                    <div id="laneArrows" class="lane-arrows"></div>
-                </div>
-                
                 <!-- Bottom Section: Stats -->
                 <div class="nav-stats-container">
                     <div class="nav-stat">
@@ -271,6 +303,9 @@
                     </div>
                 </div>
                 
+                <button type="button" id="voiceToggle" class="nav-voice-btn"
+                        onclick="toggleVoice()" aria-pressed="true">Voice on</button>
+
                 <!-- Exit Navigation Button -->
                 <button id="navExitBtn" class="nav-exit-btn" onclick="stopNavigation()">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -282,32 +317,34 @@
 
         <div class="bottom-sheet">
             <div class="sheet-header" onclick="toggleBottomSheet()">
-                <h3>📍 Riders</h3>
+                <h3>Your group</h3>
                 <span class="collapse-icon">▼</span>
             </div>
             <div class="sheet-content">
                 <div id="ridersList" class="riders-list">
-                    <p>Loading riders...</p>
+                    <p>Waiting for your group to join…</p>
                 </div>
+
+                <div id="quickMessages" class="quick-messages" role="group" aria-label="Quick messages"></div>
 
                 <div class="action-buttons">
                     <button class="btn btn-primary" onclick="startNavigation()" id="startNavBtn">
-                        Start Navigation
+                        Start navigation
                     </button>
                     <button class="btn btn-danger" onclick="stopNavigation()" id="stopNavBtn" style="display: none;">
-                        Stop Navigation
+                        Stop navigation
                     </button>
                     <button class="btn btn-secondary" onclick="toggleDirections()" id="directionsBtn">
-                        Show Directions
+                        Show directions
                     </button>
-                    <button class="btn btn-secondary" onclick="copyRoomCode()">
-                        Copy Code
+                    <button class="btn btn-secondary" onclick="copyJourneyCode()">
+                        Copy journey code
                     </button>
-                    <button class="btn btn-secondary" onclick="copyInviteLink()">
-                        Copy Link
+                    <button class="btn btn-secondary" onclick="shareCurrentInvite()">
+                        Share invite
                     </button>
-                    <button class="btn btn-danger" onclick="leaveRoom()">
-                        Leave Room
+                    <button class="btn btn-danger" onclick="leaveJourney()">
+                        Leave journey
                     </button>
                 </div>
             </div>
@@ -316,6 +353,11 @@
 
     <script src="assets/config.js"></script>
     <script src="assets/app.js"></script>
+    <script src="assets/crypto.js"></script>
+    <script src="assets/validate.js"></script>
+    <script src="assets/store.js"></script>
+    <script src="assets/journey.js"></script>
+    <script src="assets/export.js"></script>
     <script src="assets/index.js"></script>
     <script>
         // ============= LOCATION SEARCH =============
@@ -362,26 +404,42 @@
                 renderSuggestions(results);
             } catch (error) {
                 console.error('Search error:', error);
-                searchSuggestions.innerHTML = '<div class="suggestion-item">Error searching locations</div>';
-                searchSuggestions.classList.add('show');
+                renderSuggestions([]);
             }
         }
 
         function renderSuggestions(results) {
+            // Built as DOM nodes, not an innerHTML template. These strings come
+            // from a third-party geocoder, and a place name is attacker-
+            // influencable content like any other.
+            searchSuggestions.replaceChildren();
+
             if (results.length === 0) {
-                searchSuggestions.innerHTML = '<div class="suggestion-item">No locations found</div>';
+                const empty = document.createElement('div');
+                empty.className = 'suggestion-item';
+                empty.textContent = 'No places found';
+                searchSuggestions.appendChild(empty);
                 searchSuggestions.classList.add('show');
                 return;
             }
 
-            searchSuggestions.innerHTML = results.map((result, index) => `
-                <div class="suggestion-item" onclick="selectLocation(${index})">
-                    <div class="suggestion-text">${result.name || result.display_name}</div>
-                    <div class="suggestion-coords">
-                        📍 ${parseFloat(result.lat).toFixed(4)}, ${parseFloat(result.lon).toFixed(4)}
-                    </div>
-                </div>
-            `).join('');
+            results.forEach((result, index) => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.addEventListener('click', () => selectLocation(index));
+
+                const label = document.createElement('div');
+                label.className = 'suggestion-text';
+                label.textContent = result.name || result.display_name;
+
+                const coords = document.createElement('div');
+                coords.className = 'suggestion-coords';
+                coords.textContent =
+                    `${parseFloat(result.lat).toFixed(4)}, ${parseFloat(result.lon).toFixed(4)}`;
+
+                item.append(label, coords);
+                searchSuggestions.appendChild(item);
+            });
 
             searchSuggestions.classList.add('show');
         }
@@ -398,7 +456,7 @@
             document.getElementById('destLng').value = lng.toFixed(6);
 
             // Show coordinates display
-            coordsDisplay.innerHTML = `✅ ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            coordsDisplay.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
             coordsDisplay.style.display = 'block';
 
             // Hide suggestions

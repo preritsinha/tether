@@ -1,28 +1,52 @@
-/* ============= Apple-Inspired Design System ============= */
+/* ============= Waysera Design System ============= */
+/* Tokens are documented in BRAND.md, which is the source of truth. */
 
 :root {
-  /* iOS Colors */
-  --ios-blue: #007AFF;
-  --ios-blue-dark: #0051D5;
-  --ios-red: #FF3B30;
-  --ios-green: #34C759;
-  --ios-orange: #FF9500;
-  --ios-yellow: #FFCC00;
-  --ios-gray: #8E8E93;
-  --ios-gray-light: #C7C7CC;
-  --ios-gray-lighter: #E5E5EA;
-  
-  /* Backgrounds */
-  --bg-primary: #F2F2F7;
-  --bg-secondary: #FFFFFF;
-  --bg-tertiary: #F9F9F9;
-  
+  /* Brand */
+  --waysera-primary: #4F46E5;
+  --waysera-primary-strong: #4338CA;
+  --waysera-secondary: #0F766E;
+  --waysera-accent: #14B8A6;
+  --waysera-sky: #0EA5E9;
+  --waysera-ink: #0F172A;
+  --waysera-muted: #64748B;
+  --waysera-canvas: #F8FAFC;
+  --waysera-surface: #FFFFFF;
+  --waysera-dark: #0B1120;
+  --waysera-dark-surface: #111827;
+
+  --waysera-gradient: linear-gradient(135deg, #4F46E5 0%, #0EA5E9 55%, #14B8A6 100%);
+
+  /* Status colours stay semantic and independent of the brand palette.
+     Never recolour these for visual consistency. */
+  --status-success: #34C759;
+  --status-warning: #FF9500;
+  --status-danger: #FF3B30;
+
+  /* Surfaces */
+  --bg-primary: var(--waysera-canvas);
+  --bg-secondary: var(--waysera-surface);
+  --bg-tertiary: #F1F5F9;
+  --border-subtle: #E2E8F0;
+
   /* Text */
-  --text-primary: #000000;
-  --text-secondary: #3C3C43;
-  --text-tertiary: #8E8E93;
-  
-  /* Apple SF Pro-like font stack */
+  --text-primary: var(--waysera-ink);
+  --text-secondary: #334155;
+  --text-tertiary: var(--waysera-muted);
+
+  /* Legacy aliases. Retained so existing rules inherit the brand without a
+     sweeping rewrite. New CSS must use the semantic Waysera names above. */
+  --ios-blue: var(--waysera-primary);
+  --ios-blue-dark: var(--waysera-primary-strong);
+  --ios-red: var(--status-danger);
+  --ios-green: var(--status-success);
+  --ios-orange: var(--status-warning);
+  --ios-yellow: #FFCC00;
+  --ios-gray: var(--waysera-muted);
+  --ios-gray-light: #CBD5E1;
+  --ios-gray-lighter: var(--border-subtle);
+
+  /* System font stack. No downloaded fonts, no build step. */
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   
   /* Spacing (iOS 8-point grid) */
@@ -51,17 +75,161 @@
   --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Dark mode */
+/* Dark mode. The legacy aliases resolve lazily, so redefining the semantic
+   tokens here is enough; they follow automatically. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg-primary: #000000;
-    --bg-secondary: #1C1C1E;
-    --bg-tertiary: #2C2C2E;
-    --text-primary: #FFFFFF;
-    --text-secondary: #EBEBF5;
-    --text-tertiary: #8E8E93;
-    --ios-gray-lighter: #38383A;
+    --bg-primary: var(--waysera-dark);
+    --bg-secondary: var(--waysera-dark-surface);
+    --bg-tertiary: #1E293B;
+    --border-subtle: #1F2937;
+    --text-primary: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-tertiary: #94A3B8;
+    --ios-gray-light: #475569;
   }
+}
+
+/* Animation is decorative and always optional. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============= Brand lockup ============= */
+
+.brand-lockup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+.brand-mark {
+  display: block;
+  width: 44px;
+  height: 44px;
+  color: var(--waysera-primary);
+}
+
+.brand-name {
+  font-size: 34px;
+  font-weight: 780;
+  letter-spacing: -0.8px;
+  line-height: 1.1;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.brand-name .brand-name-accent {
+  color: var(--waysera-primary);
+}
+
+.brand-tagline {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  margin: 0;
+}
+
+.brand-description {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+  text-align: center;
+  max-width: 34ch;
+  margin: 0;
+}
+
+.brand-trust-line {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-align: center;
+  margin-top: var(--space-1);
+}
+
+/* Accessible focus, applied consistently rather than per-control */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--waysera-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ============= Location permission banner ============= */
+/* Previously inline styles on the element; lifted here so the banner picks up
+   brand tokens and dark mode like everything else. */
+
+.location-banner {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 250;
+  width: calc(100% - 32px);
+  max-width: 420px;
+}
+
+.location-banner-card {
+  background: var(--waysera-gradient);
+  color: #FFFFFF;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.location-banner-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+.location-banner-body {
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0.92;
+  margin-bottom: var(--space-3);
+}
+
+.location-banner-actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.location-banner-actions .btn-banner-primary {
+  background: var(--waysera-surface);
+  color: var(--waysera-primary);
+  border: none;
+  padding: 10px 24px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.location-banner-actions .btn-banner-secondary {
+  background: transparent;
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  padding: 10px 24px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
 }
 
 /* ============= Base Styles ============= */
@@ -113,22 +281,10 @@ body {
   margin: 0 auto;
 }
 
-#homePage h1 {
-  font-size: 34px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  text-align: center;
-  margin-bottom: var(--space-2);
-  color: var(--text-primary);
-}
-
-#homePage .subtitle {
-  font-size: 17px;
-  font-weight: 400;
-  text-align: center;
-  color: var(--text-secondary);
-  margin-bottom: var(--space-8);
-}
+/* The home heading and subtitle are now the .brand-lockup block defined above.
+   The old #homePage h1 / .subtitle rules were removed rather than left in
+   place, because an ID selector outranks .brand-name and would have silently
+   overridden the wordmark's weight and spacing. */
 
 /* Form sections - iOS card style */
 .form-section {
@@ -1389,3 +1545,439 @@ a,
   }
 }
 
+
+/* ============= Journey code, group list, join requests ============= */
+
+.journey-code-display {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  text-align: center;
+  padding: var(--space-4);
+  margin: var(--space-3) 0;
+  color: var(--waysera-primary);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.group-empty {
+  padding: var(--space-4);
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+.group-member {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--waysera-primary);
+}
+
+.group-member:last-child {
+  border-bottom: none;
+}
+
+.group-member-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.group-status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: capitalize;
+}
+
+/* Status is semantic, not brand. It reads the same whatever the palette. */
+.group-status-live {
+  color: #065F46;
+  background: rgba(52, 199, 89, 0.18);
+}
+
+.group-status-stale {
+  color: #92400E;
+  background: rgba(255, 149, 0, 0.18);
+}
+
+.group-status-offline {
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+}
+
+.group-member-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+
+.group-fact:empty {
+  display: none;
+}
+
+/* Join approval. Kept prominent, since granting the journey key is the one
+   decision a hostile relay cannot make on the user's behalf. */
+.join-request {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 10002;
+  width: calc(100% - 32px);
+  max-width: 420px;
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.join-request-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.join-request-body {
+  font-size: 13.5px;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-3);
+}
+
+.join-request-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.join-request-actions .btn {
+  flex: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .group-status-live {
+    color: #6EE7B7;
+    background: rgba(52, 199, 89, 0.16);
+  }
+
+  .group-status-stale {
+    color: #FCD34D;
+    background: rgba(255, 149, 0, 0.16);
+  }
+}
+
+/* ============= Quick messages ============= */
+
+.quick-messages {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding: var(--space-1) 0 var(--space-3);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.quick-messages::-webkit-scrollbar {
+  display: none;
+}
+
+.quick-message {
+  flex: 0 0 auto;
+  padding: 9px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.quick-message:active {
+  background: var(--bg-tertiary);
+  border-color: var(--waysera-primary);
+}
+
+.quick-message[disabled] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ============= Toasts ============= */
+
+.toast-stack {
+  position: fixed;
+  top: calc(16px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10001;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: calc(100% - 32px);
+  max-width: 420px;
+  pointer-events: none;
+}
+
+.toast {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-md);
+  animation: toastIn var(--transition-normal) ease-out;
+}
+
+.toast-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.toast-body {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.toast-message .toast-title {
+  color: var(--waysera-primary);
+}
+
+.toast-notice {
+  border-left: 3px solid var(--status-warning);
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============= Replay ============= */
+
+.replay-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-4);
+}
+
+.replay-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.replay-back {
+  color: var(--waysera-primary);
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.replay-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+.replay-subtitle {
+  font-size: 13.5px;
+  color: var(--text-tertiary);
+  margin: 2px 0 0;
+}
+
+.replay-error {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--status-warning);
+  color: var(--text-secondary);
+}
+
+.replay-map {
+  height: 46vh;
+  min-height: 280px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+
+.replay-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.replay-controls .btn {
+  min-width: 92px;
+}
+
+.replay-scrubber {
+  flex: 1;
+  accent-color: var(--waysera-primary);
+}
+
+.replay-clock {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.replay-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-3);
+}
+
+.replay-speeds {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.replay-speed {
+  padding: 7px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.replay-speed.is-active {
+  background: var(--waysera-primary);
+  border-color: var(--waysera-primary);
+  color: #FFFFFF;
+}
+
+.replay-exports {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.replay-timeline {
+  margin-top: var(--space-6);
+}
+
+.replay-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+
+.replay-event {
+  display: flex;
+  gap: var(--space-3);
+  width: 100%;
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.replay-event:active {
+  background: var(--bg-tertiary);
+}
+
+.replay-event-time {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  color: var(--waysera-primary);
+  min-width: 46px;
+}
+
+.replay-empty {
+  color: var(--text-tertiary);
+  font-size: 14px;
+  padding: var(--space-3);
+}
+
+/* ============= Past journeys ============= */
+
+.journey-list {
+  margin-top: var(--space-4);
+}
+
+.journey-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.journey-list-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.journey-list-name {
+  font-weight: 600;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.journey-list-meta {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+
+.journey-list-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.journey-list-actions .btn {
+  padding: 7px 14px;
+  font-size: 13.5px;
+}
+
+/* ============= Navigation voice toggle ============= */
+
+.nav-voice-btn {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top));
+  left: 16px;
+  z-index: 10;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #FFFFFF;
+  font-family: var(--font-family);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nav-voice-btn[aria-pressed="false"] {
+  opacity: 0.6;
+}
