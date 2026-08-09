@@ -2,18 +2,18 @@
 
 Waysera is a lightweight live group-navigation app for people heading to the same destination. Start a temporary journey, share a link or six-character code, and see your group on one live map — no account required.
 
-It is built so that **the server cannot see your journey**. Positions, names, messages and destinations are encrypted on your device; the server forwards bytes it has no way to read, and stores nothing at all.
+It is built so that **the server cannot see your journey**. Positions, names, messages and destinations are encrypted on your device. The server forwards bytes it has no way to read, and stores nothing at all.
 
 ---
 
 ## What it does
 
-- **Live group map** — everyone's position, speed, heading, and how far each person is from you and from the destination.
-- **Journey codes** — six characters, no signup. Share a link or read the code out loud.
-- **Turn-by-turn navigation** — with voice guidance and automatic rerouting.
-- **Quick messages** — tap to send "Pulling over", "Need fuel", "Go ahead without me". Tap-only, so nobody types while driving.
-- **Journey replay** — scrub back through a finished journey at 1x to 10x, with everything that happened on a timeline.
-- **Export** — take a journey away as JSON or GPX.
+- **Live group map.** Everyone's position, speed and heading, plus how far each person is from you and from the destination.
+- **Journey codes.** Six characters, no signup. Share a link, or read the code out loud.
+- **Turn-by-turn navigation**, with voice guidance and automatic rerouting.
+- **Quick messages.** Tap to send "Pulling over", "Need fuel", "Go ahead without me". Tap-only, so nobody types while driving.
+- **Journey replay.** Scrub back through a finished journey at 1x to 10x, with everything that happened laid out on a timeline.
+- **Export.** Take a journey away as JSON or GPX.
 
 Everything is stored on your device. Journeys you have finished stay in a list until you delete them.
 
@@ -21,7 +21,7 @@ Everything is stored on your device. Journeys you have finished stay in a list u
 
 ## How the privacy works
 
-The server is a **relay**, not a database:
+The server is a **relay**, not a database.
 
 ```
 Client A ──encrypted──┐                    ┌──encrypted── Client B
@@ -29,7 +29,7 @@ Client A ──encrypted──┐                    ┌──encrypted── Cl
 Client C ──encrypted──┘   (forwards bytes) └──encrypted── Client D
 ```
 
-Each journey has a key that is generated on the device that created it. That key travels in the **fragment** of the invite link — the part after `#`, which browsers never send to any server. The relay only ever sees an opaque channel identifier and encrypted payloads it cannot open.
+Each journey has a key generated on the device that created it. That key travels in the **fragment** of the invite link, the part after `#`, which browsers never send to any server. The relay only ever sees an opaque channel identifier and encrypted payloads it cannot open.
 
 Joining by typing a code rather than opening a link means you have no key yet, so an existing member has to grant you one. That exchange requires somebody to look at your name and tap **Allow**.
 
@@ -82,7 +82,7 @@ python3 -m http.server 3000
 
 Then open `http://localhost:3000`.
 
-Note that WebCrypto and IndexedDB both require a secure context. `localhost` counts as one; a bare LAN IP does not, so testing on a phone over Wi-Fi needs HTTPS.
+WebCrypto and IndexedDB both need a secure context. `localhost` counts as one, a bare LAN IP does not, so testing on a phone over Wi-Fi needs HTTPS.
 
 ---
 
@@ -129,7 +129,7 @@ GET /v1/health
 WS /v1/relay/{channel_id}
 ```
 
-`channel_id` is the lowercase SHA-256 of a journey code, computed on the client, so the code itself never reaches the server. Anything that is not a 64-character hex digest is refused.
+`channel_id` is the lowercase SHA-256 of a journey code, worked out on the client, so the code itself never reaches the server. Anything that is not a 64-character hex digest is refused.
 
 Every frame received is forwarded verbatim to the channel's other sockets and to nobody else. The sender never receives its own frames back. The relay never parses, logs, or retains a payload.
 
@@ -153,7 +153,7 @@ backend/.venv/bin/python tools/smoke_app.py
 backend/.venv/bin/python tools/integration_test.py
 ```
 
-The browser suites run in Chrome rather than Node on purpose: the code under test needs WebCrypto **and** IndexedDB, and IndexedDB has no faithful Node equivalent — a polyfill would be testing the polyfill.
+The browser suites run in Chrome rather than Node for a reason. The code under test needs WebCrypto **and** IndexedDB, and IndexedDB has no faithful Node equivalent, so a polyfill would end up testing the polyfill.
 
 The integration test also asserts the property everything else rests on. It joins a live journey as an unauthorised third party and checks that what crosses the wire is unreadable.
 
@@ -171,15 +171,15 @@ Set `ALLOWED_ORIGINS` to your frontend origin. Note that WebSocket upgrades are 
 
 **Web client** — a Render static site, root directory `web`, publish directory `.`.
 
-Before switching domains, add the new one to the Mapbox token's URL restrictions. The token in `web/assets/config.js` is a publishable `pk.` token: it is served to every visitor by design, and URL restrictions — not secrecy — are what protect it.
+Before switching domains, add the new one to the Mapbox token's URL restrictions. The token in `web/assets/config.js` is a publishable `pk.` token. It is served to every visitor by design, so URL restrictions rather than secrecy are what protect it.
 
 ---
 
 ## Limitations
 
-- **Background tracking is not possible on the web.** Browsers suspend geolocation when a tab is hidden. A wake lock keeps the screen alive during navigation; only a native app solves the rest.
+- **Background tracking is not possible on the web.** Browsers suspend geolocation when a tab is hidden. A wake lock keeps the screen alive during navigation, but only a native app solves the rest.
 - **Journey expiry is advisory.** With no server, nothing enforces it.
-- **Nothing survives losing your device.** There is no copy anywhere else. That is the trade for the privacy model — export a journey if you want to keep it.
+- **Nothing survives losing your device.** There is no copy anywhere else. That is the trade the privacy model makes, so export a journey if you want to keep it.
 
 ---
 

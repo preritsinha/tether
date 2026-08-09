@@ -6,7 +6,7 @@
  * was running, so each device already holds a complete copy.
  *
  * Positions are recorded every few seconds, so playback interpolates between
- * them — otherwise markers would jump rather than move.
+ * them. Without that, markers would jump instead of moving.
  */
 
 (() => {
@@ -181,7 +181,7 @@
         if (event.kind === 'left') return `${who} left`;
         if (event.kind === 'quick_message') return `${who}: ${data.text || ''}`;
         if (event.kind === 'arrived') return `${who} arrived`;
-        return `${who} — ${event.kind}`;
+        return `${who}: ${event.kind}`;
     }
 
     function formatOffset(ms) {
@@ -196,8 +196,8 @@
     /**
      * Position of one person at an arbitrary moment.
      *
-     * Returns null before their first point and holds at their last — people
-     * join and leave mid-journey, so a track does not span the whole timeline.
+     * Returns null before their first point and holds at their last. People
+     * join and leave mid-journey, so a track rarely covers the whole timeline.
      */
     function positionAt(track, ts) {
         if (ts <= track[0].ts) return ts < track[0].ts ? null : track[0];
@@ -230,7 +230,8 @@
             const marker = markers.get(memberId);
             const position = positionAt(track, currentTs);
             if (!position) {
-                // Not yet on the journey — hide rather than park at the origin.
+                // Not on the journey yet. Hide them instead of parking the
+                // marker at the origin.
                 if (map.hasLayer(marker)) map.removeLayer(marker);
                 continue;
             }

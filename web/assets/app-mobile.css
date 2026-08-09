@@ -1,5 +1,5 @@
 /* ============= Waysera Design System ============= */
-/* Tokens are documented in BRAND.md — that file is the source of truth. */
+/* Tokens are documented in BRAND.md, which is the source of truth. */
 
 :root {
   /* Brand */
@@ -35,7 +35,7 @@
   --text-tertiary: var(--waysera-muted);
 
   /* Legacy aliases. Retained so existing rules inherit the brand without a
-     sweeping rewrite — new CSS must use the semantic Waysera names above. */
+     sweeping rewrite. New CSS must use the semantic Waysera names above. */
   --ios-blue: var(--waysera-primary);
   --ios-blue-dark: var(--waysera-primary-strong);
   --ios-red: var(--status-danger);
@@ -46,7 +46,7 @@
   --ios-gray-light: #CBD5E1;
   --ios-gray-lighter: var(--border-subtle);
 
-  /* System font stack — no downloaded fonts, no build step */
+  /* System font stack. No downloaded fonts, no build step. */
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   
   /* Spacing (iOS 8-point grid) */
@@ -76,7 +76,7 @@
 }
 
 /* Dark mode. The legacy aliases resolve lazily, so redefining the semantic
-   tokens here is enough — they follow automatically. */
+   tokens here is enough; they follow automatically. */
 @media (prefers-color-scheme: dark) {
   :root {
     --bg-primary: var(--waysera-dark);
@@ -283,7 +283,7 @@ body {
 
 /* The home heading and subtitle are now the .brand-lockup block defined above.
    The old #homePage h1 / .subtitle rules were removed rather than left in
-   place — an ID selector outranks .brand-name and would have silently
+   place, because an ID selector outranks .brand-name and would have silently
    overridden the wordmark's weight and spacing. */
 
 /* Form sections - iOS card style */
@@ -1593,7 +1593,7 @@ a,
   text-transform: capitalize;
 }
 
-/* Status is semantic, not brand — it must read the same whatever the palette. */
+/* Status is semantic, not brand. It reads the same whatever the palette. */
 .group-status-live {
   color: #065F46;
   background: rgba(52, 199, 89, 0.18);
@@ -1621,7 +1621,7 @@ a,
   display: none;
 }
 
-/* Join approval. Deliberately prominent: granting the journey key is the one
+/* Join approval. Kept prominent, since granting the journey key is the one
    decision a hostile relay cannot make on the user's behalf. */
 .join-request {
   position: fixed;

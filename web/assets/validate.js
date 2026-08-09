@@ -2,10 +2,10 @@
  * Waysera peer-input validation.
  *
  * Every message arriving over the relay is treated as hostile. There is no
- * server-side validation layer any more — the relay forwards bytes it cannot
- * read — so this file is the only thing between another participant and the
- * DOM. Decryption proves a message came from someone holding the journey key;
- * it proves nothing about whether they are well behaved.
+ * server-side validation layer any more, since the relay forwards bytes it
+ * cannot read. That leaves this file as the only thing between another
+ * participant and the DOM. Decryption proves a message came from someone
+ * holding the journey key. It proves nothing about how they behave.
  *
  * Validators return a freshly built, sanitised object or null. They never
  * repair a malformed message and never pass the original through.
@@ -58,7 +58,7 @@ const WayseraValidate = (() => {
             .replace(/'/g, '&#39;');
     }
 
-    /** Preferred over escapeHtml where the DOM allows it — no parsing at all. */
+    /** Preferred over escapeHtml wherever the DOM allows it. Nothing is parsed. */
     function setText(element, value) {
         if (element) element.textContent = String(value);
     }
@@ -116,8 +116,8 @@ const WayseraValidate = (() => {
     }
 
     function timestamp(value) {
-        // Milliseconds. Bounded loosely — this is a sanity check, not a trust
-        // decision, and peer clocks are not authoritative for anything.
+        // Milliseconds, bounded loosely. This is a sanity check rather than a
+        // trust decision; peer clocks are not authoritative for anything.
         return boundedNumber(value, 0, 4102444800000);
     }
 
@@ -180,7 +180,7 @@ const WayseraValidate = (() => {
         const id = memberId(message.memberId);
         const presetId = typeof message.presetId === 'string' ? message.presetId : null;
         // Membership in the frozen preset table is the whole check. Anything
-        // outside it — including free text smuggled in as presetId — is dropped.
+        // outside it gets dropped, including free text smuggled in as presetId.
         if (!id || !presetId || !Object.prototype.hasOwnProperty.call(QUICK_MESSAGES, presetId)) {
             return null;
         }

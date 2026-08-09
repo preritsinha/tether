@@ -8,9 +8,9 @@
 
 const NAME_KEY = 'waysera.name';
 
-// The view model deliberately keeps the shape the map, routing and navigation
-// code already expects, so none of that had to change: room_id, destination,
-// and a members map keyed by id with last_location.
+// The view model keeps the shape the map, routing and navigation code already
+// expects (room_id, destination, and a members map keyed by id with
+// last_location), so none of that needed rewriting.
 let currentRoom = null;
 let currentMemberId = null;
 let session = null;
@@ -22,7 +22,7 @@ let routingControls = {};
 let showDirections = false;
 
 // Geolocation and demo mode once shared a single variable, so leaving a journey
-// called clearInterval on a watchPosition id — which does nothing — and left GPS
+// called clearInterval on a watchPosition id, which does nothing, and left GPS
 // running. They are separate handles now, each cleared with its matching API.
 let geoWatchId = null;
 let demoIntervalId = null;
@@ -154,7 +154,7 @@ async function shareInvite(inviteLink) {
             await navigator.share({ title: 'Waysera', text: 'Join my journey', url: inviteLink });
             return;
         } catch (error) {
-            // Cancelled, or unsupported in this context — fall through to copy.
+            // Cancelled, or unsupported here. Fall through to copying instead.
         }
     }
     copyToClipboard(inviteLink);
@@ -383,7 +383,6 @@ function showJoinRequest(request) {
 
 function initializeMap() {
     try {
-        console.log('🗺️ Initializing map...');
         
         if (map) {
             map.remove();
@@ -421,9 +420,9 @@ function initializeMap() {
         }).setView([destination.lat, destination.lng], 13);
         
         // Tile source: OpenStreetMap locally (no token required), Mapbox in production.
-        // The token lives in exactly one place — WAYSERA_CONFIG in config.js — so
-        // rotating it is a single edit. There is deliberately no hardcoded fallback
-        // copy here; a second copy is how a rotation silently half-applies.
+        // The token lives in exactly one place, WAYSERA_CONFIG in config.js, so
+        // rotating it is a single edit. No hardcoded fallback copy lives here;
+        // a second copy is how a rotation silently half-applies.
         const mapboxToken = (window.WAYSERA_CONFIG && window.WAYSERA_CONFIG.MAPBOX_TOKEN) || '';
         const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const mapboxAllowedHere = !isLocalhost || (window.WAYSERA_CONFIG && window.WAYSERA_CONFIG.USE_MAPBOX_ON_LOCALHOST);
@@ -431,7 +430,7 @@ function initializeMap() {
 
         if (!useMapbox) {
             if (mapboxAllowedHere && !mapboxToken) {
-                console.warn('No Mapbox token configured — falling back to OpenStreetMap tiles.');
+                console.warn('No Mapbox token configured. Falling back to OpenStreetMap tiles.');
             }
             // Free OpenStreetMap tiles for local testing (no token needed)
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -442,7 +441,6 @@ function initializeMap() {
                 updateWhenZooming: false,
                 keepBuffer: 4
             }).addTo(map);
-            console.log('🗺️ Using OpenStreetMap tiles (localhost)');
         } else {
             L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`, {
                 attribution: '© Mapbox © OpenStreetMap',
@@ -456,7 +454,6 @@ function initializeMap() {
                 keepBuffer: 4,
                 crossOrigin: true
             }).addTo(map);
-            console.log('🗺️ Using Mapbox tiles (production)');
         }
         
         // Add destination marker (red)
@@ -470,17 +467,26 @@ function initializeMap() {
                 shadowSize: [41, 41]
             })
         }).addTo(map);
-        destMarker.bindPopup(`<b>${destination.name}</b><br>📍 Destination`);
+        // A DOM node, not a template string. The destination name reaches us
+        // over the relay in journey_config, so bindPopup would parse a peer's
+        // text as markup.
+        const destPopup = document.createElement('div');
+        const destTitle = document.createElement('strong');
+        destTitle.textContent = destination.name;
+        const destLabel = document.createElement('div');
+        destLabel.textContent = 'Destination';
+        destPopup.append(destTitle, destLabel);
+        destMarker.bindPopup(destPopup);
+        window.destMarker = destMarker; // reachable for the popup safety check
         
         // Smooth invalidateSize for proper rendering
         setTimeout(() => {
             map.invalidateSize();
         }, 100);
         
-        console.log('✅ Map initialized');
         
     } catch (error) {
-        console.error('❌ Map initialization error:', error);
+        console.error('Could not initialise the map', error);
     }
 }
 
@@ -578,7 +584,7 @@ function updateUserLocationMarker(location, status) {
         }
 
     } catch (error) {
-        console.error('❌ Error updating user location marker:', error);
+        console.error('Could not update your marker', error);
     }
 }
 
@@ -653,7 +659,7 @@ function distanceToDestination(member) {
     );
 }
 
-/** Distance between this person and you — the thing a convoy actually asks. */
+/** How far this person is from you, which is what a convoy actually asks. */
 function distanceFromMe(member) {
     if (member.isSelf || !lastKnownLocation) return '';
     const km = haversineDistance(
@@ -703,8 +709,8 @@ function startLocationTracking() {
         (position) => {
             publishPosition(position.coords);
 
-            // watchPosition returns a watch id, cleared with clearWatch — not
-            // an interval id. Keeping it in its own variable is what stops
+            // watchPosition returns a watch id, cleared with clearWatch, not an
+            // interval id. Keeping it in its own variable is what stops
             // leaveJourney() from leaving GPS running.
             geoWatchId = navigator.geolocation.watchPosition(
                 (pos) => publishPosition(pos.coords),
@@ -754,7 +760,7 @@ function stopLocationTracking() {
 
 function handleLocationError(error) {
     const messages = {
-        1: 'Location is turned off for this site. Your group cannot see you — using demo mode.',
+        1: 'Location is off for this site, so your group cannot see you. Using demo mode.',
         2: 'We could not get a GPS fix. Using demo mode for now.',
         3: 'Locating took too long. Using demo mode for now.'
     };
@@ -855,8 +861,8 @@ const announcedArrivals = new Set();
 /**
  * Announce someone else reaching the destination.
  *
- * Announced once per person per journey — positions keep arriving after
- * someone parks, and repeating it every three seconds would be maddening.
+ * Announced once per person per journey. Positions keep arriving after someone
+ * parks, and repeating it every three seconds would be maddening.
  */
 function checkPeerArrival(message) {
     if (!currentRoom || !currentRoom.destination) return;
@@ -968,15 +974,14 @@ function toggleDirections() {
     showDirections = !showDirections;
     const btn = document.getElementById('directionsBtn');
     
-    console.log('🧭 Toggling directions:', showDirections ? 'ON' : 'OFF');
     
     if (showDirections) {
-        btn.textContent = '🧭 Hide Directions';
+        btn.textContent = 'Hide directions';
         btn.classList.add('btn-primary');
         btn.classList.remove('btn-secondary');
         drawAllRoutes();
     } else {
-        btn.textContent = '🧭 Show Directions';
+        btn.textContent = 'Show directions';
         btn.classList.remove('btn-primary');
         btn.classList.add('btn-secondary');
         clearAllRoutes();
@@ -985,7 +990,7 @@ function toggleDirections() {
 
 function drawAllRoutes() {
     if (!currentRoom || !map) {
-        console.warn('⚠️ Cannot draw routes: currentRoom or map not ready');
+        console.warn('Routes requested before the map was ready');
         return;
     }
     
@@ -993,7 +998,6 @@ function drawAllRoutes() {
     const members = currentRoom.members || {};
     const memberCount = Object.keys(members).length;
     
-    console.log(`🗺️ Drawing routes for ${memberCount} members`);
     
     // Draw route for each member with a location
     for (const [memberId, member] of Object.entries(members)) {
@@ -1044,7 +1048,7 @@ function drawRoute(memberId, fromLocation, toDestination) {
         
         // Add error handler for fallback
         routingControl.on('routingerror', function(e) {
-            console.warn('⚠️ Routing error for', memberId, '- showing direct line instead');
+            console.warn('Routing failed for', memberId, '- falling back to a straight line');
             
             // Remove the failed routing control
             if (routingControls[memberId]) {
@@ -1070,10 +1074,9 @@ function drawRoute(memberId, fromLocation, toDestination) {
             routingControls[memberId] = { _line: directLine };
         });
         
-        console.log('✅ Route drawn for', memberId, 'color:', getRouteColor(memberId));
         
     } catch (error) {
-        console.error('❌ Error drawing route for', memberId, error);
+        console.error('Could not draw a route for', memberId, error);
         
         // Fallback: Draw direct line
         try {
@@ -1088,9 +1091,8 @@ function drawRoute(memberId, fromLocation, toDestination) {
             }).addTo(map);
             
             routingControls[memberId] = { _line: directLine };
-            console.log('✅ Direct line drawn for', memberId, '(fallback)');
         } catch (fallbackError) {
-            console.error('❌ Even fallback failed:', fallbackError);
+            console.error('Straight-line fallback failed too', fallbackError);
         }
     }
 }
@@ -1143,7 +1145,7 @@ function setVoiceEnabled(enabled) {
     try {
         localStorage.setItem(VOICE_KEY, enabled ? 'on' : 'off');
     } catch (error) {
-        // Private mode — the setting simply will not persist.
+        // Private mode. The setting just will not persist.
     }
     if (!enabled && window.speechSynthesis) window.speechSynthesis.cancel();
     updateVoiceButton();
@@ -1164,8 +1166,8 @@ function updateVoiceButton() {
 /**
  * Speak a navigation instruction.
  *
- * Only ever called when the instruction text actually changes — announcing on
- * every position tick would talk over itself several times a second.
+ * Only called when the instruction text actually changes. Announcing on every
+ * position tick would talk over itself several times a second.
  */
 function speak(text) {
     if (!text || !voiceEnabled()) return;
@@ -1213,12 +1215,11 @@ function startNavigation() {
     }
     
     if (!lastKnownLocation) {
-        showLocationAlert('Finding your position — try again in a moment.');
+        showLocationAlert('Still finding your position. Try again in a moment.');
         if (geoWatchId === null && !demoMode) startLocationTracking();
         return;
     }
     
-    console.log('🧭 Starting FUTURISTIC navigation mode');
     navigationActive = true;
     lastSpokenInstruction = '';
     acquireWakeLock();
@@ -1309,7 +1310,6 @@ function createNavigationRoute(fromLocation, toDestination) {
     }
     
     try {
-        console.log('📍 Creating navigation route from', fromLocation, 'to', toDestination);
         
         // Show loading state
         document.getElementById('navInstruction').textContent = 'Calculating optimal route...';
@@ -1352,7 +1352,6 @@ function createNavigationRoute(fromLocation, toDestination) {
             const routes = e.routes;
             if (routes && routes.length > 0) {
                 navigationRoute = routes[0];
-                console.log('✅ Navigation route found:', navigationRoute);
                 
                 // Add smooth fade-in animation to route line
                 setTimeout(() => {
@@ -1368,7 +1367,7 @@ function createNavigationRoute(fromLocation, toDestination) {
         });
         
         navigationRoutingControl.on('routingerror', function(e) {
-            console.error('❌ Routing error:', e);
+            console.error('Routing failed', e);
             
             // Show simple route line as fallback
             const routeLine = L.polyline([
@@ -1400,7 +1399,7 @@ function createNavigationRoute(fromLocation, toDestination) {
         });
         
     } catch (error) {
-        console.error('❌ Error creating navigation route:', error);
+        console.error('Could not start navigation', error);
         showNavigationError('Failed to start navigation. Please try again.');
     }
 }
@@ -1469,8 +1468,8 @@ function updateNavigationUI(route) {
         document.getElementById('navInstruction').textContent = instructionText;
         document.getElementById('navInstructionDistance').textContent = instructionDistance;
 
-        // Distance is deliberately left out of the spoken line: it changes on
-        // every tick, and including it would make the guard below useless.
+        // Distance stays out of the spoken line. It changes on every tick, and
+        // including it would defeat the repeat guard in speak().
         speak(instructionText);
         
         // Update direction arrow SVG based on instruction type
@@ -1532,8 +1531,8 @@ function updateDirectionArrow(instructionType) {
 // Lane guidance was removed rather than repaired.
 //
 // The previous implementation hardcoded three lanes and guessed the active one
-// from the instruction text — invented data presented to someone who is
-// driving, which is worse than showing nothing. Real lane data does exist in
+// from the instruction text. That is invented data shown to someone who is
+// driving, which is worse than showing nothing at all. Real lane data does exist in
 // OSRM's response under step.intersections[].lanes, but leaflet-routing-machine
 // copies only ten fields off each step (type, distance, time, road, direction,
 // exit, index, mode, modifier, text) and discards the rest, so it never reaches
@@ -1569,7 +1568,6 @@ function updateNavigationProgress() {
     const distanceFromRoute = calculateDistanceFromRoute(lastKnownLocation);
     
     if (distanceFromRoute > 50) { // 50 meters off route
-        console.log('🔄 Recalculating route (off course by', distanceFromRoute.toFixed(0), 'm)');
         createNavigationRoute(lastKnownLocation, currentRoom.destination);
     } else {
         // Update navigation UI with current position
@@ -1648,7 +1646,7 @@ function showArrivalNotification() {
         border: 2px solid rgba(255, 255, 255, 0.3);
     `;
     notification.innerHTML = `
-        <div style="font-size: 48px; margin-bottom: 12px;">🏁</div>
+        
         <div>You&rsquo;ve arrived.</div>
         <div style="font-size: 16px; font-weight: 400; margin-top: 8px; opacity: 0.9;">
             Everyone can see you made it.
@@ -1689,11 +1687,11 @@ function updateNavigationButtonState() {
     if (!startBtn || navigationActive) return;
     
     if (lastKnownLocation) {
-        startBtn.innerHTML = '🧭 Start Navigation';
+        startBtn.textContent = 'Start navigation';
         startBtn.disabled = false;
         startBtn.style.opacity = '1';
     } else {
-        startBtn.innerHTML = '📍 Getting Location...';
+        startBtn.textContent = 'Finding you…';
         startBtn.disabled = true;
         startBtn.style.opacity = '0.6';
     }
@@ -1737,8 +1735,8 @@ function leaveJourney() {
         map = null;
     }
 
-    // The journey record and its track stay on the device — leaving is not
-    // deleting. Only the pointer to the active journey is cleared.
+    // The journey record and its track stay on the device. Leaving is not
+    // deleting; only the pointer to the active journey is cleared.
     WayseraStore.clearActiveJourney();
 
     currentRoom = null;
@@ -1888,7 +1886,7 @@ async function renderJourneyListItem(journey) {
     remove.className = 'btn btn-danger';
     remove.textContent = 'Delete';
     remove.onclick = async () => {
-        // Deleting cascades to the track and the event log — this is the only
+        // Deleting cascades to the track and the event log. This is the only
         // copy, so say so plainly rather than deleting quietly.
         const label = journey.destination ? journey.destination.name : journey.code;
         if (!confirm(`Delete "${label}" and everything recorded during it? This cannot be undone.`)) {

@@ -6,10 +6,10 @@
  * travels in the invite link's URL fragment, which browsers do not transmit.
  *
  * Two ways to obtain the journey key:
- *   1. Open an invite link — the key is in the fragment.
- *   2. Type a journey code — no key, so an existing member must hand it over.
- *      That handoff is an ECDH exchange gated by a human approval tap; see
- *      the key_request / key_grant flow in the relay protocol.
+ *   1. Open an invite link. The key is in the fragment.
+ *   2. Type a journey code. There is no key, so an existing member has to
+ *      hand one over. That handoff is an ECDH exchange gated by a human
+ *      approval tap; see the key_request / key_grant flow below.
  *
  * Plain script with a global namespace, matching the rest of the app. No build
  * step, no modules.
@@ -21,9 +21,8 @@ const WayseraCrypto = (() => {
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
-    // Deliberately excludes O/0 and I/1. Journey codes get read aloud in a car,
-    // so visual and spoken ambiguity costs more than the lost alphabet size.
-    // 32^6 is ~1.07 billion combinations.
+    // No O/0 or I/1. Journey codes get read aloud in a car, so ambiguity costs
+    // more than the four characters we give up. 32^6 is about 1.07 billion.
     const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     const CODE_LENGTH = 6;
 
@@ -80,7 +79,7 @@ const WayseraCrypto = (() => {
      * Channel id = SHA-256 of the journey code, lowercase hex.
      *
      * This keeps the code itself off the wire, but it is obfuscation rather
-     * than a security boundary — a six-character code is roughly 30 bits and
+     * than a security boundary. A six-character code is roughly 30 bits and
      * trivially precomputed. The journey key is what actually protects the
      * traffic. The relay independently refuses anything that is not a digest.
      */
@@ -143,7 +142,7 @@ const WayseraCrypto = (() => {
 
     /**
      * Decrypt an envelope. Returns null rather than throwing on anything
-     * malformed or unauthentic — a hostile peer can put whatever it likes on
+     * malformed or unauthentic. A hostile peer can put whatever it likes on
      * the channel, and a failed open is an ordinary event, not an exception.
      */
     async function open(key, envelope) {

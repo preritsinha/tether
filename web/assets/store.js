@@ -5,8 +5,8 @@
  * is the only copy: journey metadata and key, the position track of everyone
  * seen during a journey, and the event log behind replay.
  *
- * IndexedDB rather than localStorage — a three-hour journey with ten people is
- * tens of thousands of points, which localStorage can neither hold nor write
+ * IndexedDB rather than localStorage. A three-hour journey with ten people runs
+ * to tens of thousands of points, which localStorage can neither hold nor write
  * without blocking the main thread. localStorage keeps a single pointer to the
  * active journey and nothing else.
  */

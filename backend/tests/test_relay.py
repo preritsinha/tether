@@ -148,8 +148,8 @@ def test_channel_cap_rejects_the_extra_socket(client, monkeypatch):
     """The cap is exercised with a small hub rather than the production one.
 
     Standing up eleven concurrent TestClient sockets deadlocks its portal, and
-    the number itself is not what matters — that the endpoint refuses the
-    socket past the limit is.
+    the number itself is not what matters. What matters is that the endpoint
+    refuses the socket once the limit is reached.
     """
     monkeypatch.setattr(main, "hub", RelayHub(RelayLimits(max_sockets_per_channel=2)))
 
@@ -287,7 +287,7 @@ def test_token_bucket_refills_over_time():
 def test_channel_digest_is_redacted_from_logs():
     """A journey code is ~31 bits, so its digest is reversible from a
     precomputed table. If the relay logs the digest, deriving it client-side
-    protects nothing — so it must never reach a log record."""
+    protects nothing, so it must never reach a log record."""
     log_filter = main.RedactChannelIds()
 
     record = logging.LogRecord(

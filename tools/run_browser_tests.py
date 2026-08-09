@@ -98,7 +98,7 @@ def main() -> int:
 
     try:
         if not received.wait(TIMEOUT_SECONDS):
-            print(f"No results within {TIMEOUT_SECONDS}s — the page may have failed to load.")
+            print(f"No results within {TIMEOUT_SECONDS}s. The page may have failed to load.")
             return 2
     finally:
         process.terminate()

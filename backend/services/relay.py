@@ -2,7 +2,7 @@
 Channel registry for the Waysera relay.
 
 The hub knows which sockets are attached to which opaque channel and nothing
-else. It never inspects a payload — frames arrive as ciphertext and are
+else. It never inspects a payload; frames arrive as ciphertext and are
 forwarded verbatim. Everything here lives in memory and dies with the process;
 there is no persistence by design.
 """

@@ -3,7 +3,7 @@
  *
  * Konvoyage shares a replay as a link, which means the track sits on a server
  * for the recipient to fetch. Waysera has no server to put it on, so sharing is
- * a file you send however you like — and the journey never leaves your control
+ * a file you send however you like, so the journey never leaves your control
  * unless you choose to send it.
  *
  * JSON is the full-fidelity form and can be read back in. GPX opens in any
@@ -66,8 +66,8 @@ const WayseraExport = (() => {
                     createdAt: journey.createdAt || null,
                     expiresAt: journey.expiresAt || null
                 },
-                // The journey key is deliberately absent. Exporting it would
-                // hand over live access to a journey, not just its history.
+                // No journey key here. Exporting it would hand over live access
+                // to a journey rather than just its history.
                 people: Array.from(namesFromEvents(events), ([memberId, name]) => ({
                     memberId,
                     name

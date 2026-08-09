@@ -3,7 +3,7 @@
 Load the real Waysera page in headless Chrome and fail on any console error.
 
 The unit suite covers crypto, storage, validation and the session, but it does
-not load index.js — so a syntax error or a bad reference there would sail past
+not load index.js, so a syntax error or a bad reference there would sail past
 it. This attaches over the DevTools protocol before navigating, so errors
 thrown during initial parse and load are caught too.
 
@@ -36,8 +36,8 @@ DEBUG_PORT = 9333
 
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
-# Noise we do not control: the page deliberately runs without a relay here, and
-# tiles/geocoding are third-party and offline in this context.
+# Noise we do not control. There is no relay running in this check, and tiles
+# and geocoding are third-party and unreachable offline.
 IGNORE_SUBSTRINGS = (
     "favicon",
     "ERR_INTERNET_DISCONNECTED",
@@ -140,6 +140,28 @@ PAGE_CHECKS = """
     report.spokenWhileMuted = spoken.length - report.spoken.length;
     report.mutePersisted = localStorage.getItem('waysera.voice');
     setVoiceEnabled(true);
+
+    // A destination name arrives over the relay in journey_config, so the map
+    // popup has to treat it as hostile. Done last, because it navigates into a
+    // journey and leaves the home page behind.
+    window.__xssFired = false;
+    const payload = '<img src=x onerror="window.__xssFired = true">';
+    document.getElementById('destName').value = payload;
+    document.getElementById('destLat').value = '18.922';
+    document.getElementById('destLng').value = '72.834';
+    await window.createJourney();
+
+    const hostileCode = document.querySelector('.journey-code-display').textContent;
+    await window.startJourney(hostileCode, 'Alex');
+
+    // Leaflet does not build popup content until it is opened.
+    if (window.destMarker) window.destMarker.openPopup();
+    await new Promise((r) => setTimeout(r, 300));
+
+    report.xssFired = window.__xssFired;
+    report.injectedImages = document.querySelectorAll('img[src="x"]').length;
+    const popup = document.querySelector('.leaflet-popup-content');
+    report.popupText = popup ? popup.textContent.slice(0, 60) : null;
   } catch (error) {
     report.errors.push(String(error && error.stack ? error.stack : error));
   }
@@ -208,7 +230,7 @@ async def collect(url: str, page_url: str) -> tuple[list[str], dict]:
                             problems.append(f"console.error: {text}")
 
         except asyncio.TimeoutError:
-            pass  # Quiet for 12s — the page has settled.
+            pass  # Quiet for 12s. The page has settled.
 
     return problems, report
 
@@ -278,13 +300,24 @@ def main() -> int:
         if report.get("mutePersisted") != "off":
             failures.append(f"mute preference not persisted: {report.get('mutePersisted')!r}")
 
+        if report.get("xssFired"):
+            failures.append("XSS: a destination name executed script in the map popup")
+        if report.get("injectedImages"):
+            failures.append(
+                f"XSS: destination name produced {report['injectedImages']} injected element(s)"
+            )
+        if report.get("popupText") is not None and "<img" not in report["popupText"]:
+            failures.append(
+                f"destination popup did not render the name as text: {report['popupText']!r}"
+            )
+
     if failures:
         for failure in failures:
             print(failure)
         print(f"\n{len(failures)} problem(s)")
         return 1
 
-    print(f"index.html OK — created journey {report['code']}, key and destination persisted")
+    print(f"index.html OK. Created journey {report['code']}, key and destination persisted.")
     return 0
 
 

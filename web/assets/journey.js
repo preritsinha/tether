@@ -9,14 +9,14 @@
  * -----------
  * Two frame shapes cross the relay, and the difference matters:
  *
- *   {"iv": ..., "ct": ...}   sealed journey traffic — the relay cannot read it
- *   {"hs": {...}}            handshake — necessarily in the clear
+ *   {"iv": ..., "ct": ...}   sealed journey traffic, which the relay cannot read
+ *   {"hs": {...}}            handshake, which is necessarily in the clear
  *
  * The handshake is plaintext because it cannot be otherwise: someone joining
  * with a code alone holds no key, so they cannot encrypt a request for one.
  * What the relay can therefore observe is that a person by some display name
  * wants into a channel, plus two ephemeral ECDH public keys. It does not
- * learn the journey key — ECDH keeps that from a passive observer.
+ * learn the journey key. ECDH keeps that from a passive observer.
  *
  * An *active* relay could substitute its own public key and man-in-the-middle
  * the handoff. The mitigation is human: granting a key requires someone to
@@ -129,8 +129,8 @@ const WayseraJourney = (() => {
             socket.onclose = (event) => {
                 if (this.closed) return;
                 this.emit('disconnected', { code: event.code, reason: event.reason });
-                // 1008 is a policy refusal — bad channel, or the journey is
-                // full. Retrying would just be refused again.
+                // 1008 means the relay refused us: bad channel, or the journey
+                // is full. Retrying would only be refused again.
                 if (event.code === 1008 || event.code === 1013) {
                     this.emit('refused', { code: event.code, reason: event.reason });
                     return;
@@ -264,8 +264,8 @@ const WayseraJourney = (() => {
 
             // Returned, not fired and forgotten. The handshake and the config
             // reply are async, and letting those promises float means nothing
-            // downstream can tell when a frame has finished being processed —
-            // including reconnection logic and tests.
+            // downstream can tell when a frame has finished being processed,
+            // reconnection logic and tests included.
             if (frame.hs) {
                 return this.handleHandshake(frame.hs);
             }
@@ -349,7 +349,7 @@ const WayseraJourney = (() => {
                 }
             }
             // Status is time-derived, so the roster is republished every tick
-            // regardless — that is what moves someone to Stale without traffic.
+            // regardless. That is what moves someone to Stale without traffic.
             this.emitRoster();
             if (changed) this.emit('pruned');
         }
@@ -394,7 +394,7 @@ const WayseraJourney = (() => {
 
             if (message.type === 'key_request') {
                 // Never granted automatically. A human has to look at the name
-                // and decide — that tap is the only thing standing between a
+                // and decide. That tap is the only thing standing between a
                 // hostile relay and a substituted public key.
                 if (message.memberId === this.memberId) return;
                 if (!this.key) return; // We have no key to give.

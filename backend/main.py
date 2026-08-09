@@ -1,10 +1,10 @@
 """
-Waysera — zero-knowledge relay.
+Waysera relay.
 
-This service is deliberately not a database. It forwards opaque frames between
+This service is not a database. It forwards opaque frames between
 clients that share a channel and retains nothing: no journeys, no people, no
 positions, no history. Payloads arrive already encrypted on the device, and the
-key travels in the invite link's URL fragment, which browsers never transmit —
+key travels in the invite link's URL fragment, which browsers never transmit,
 so the relay has no way to read what passes through it.
 
 The only state is a map of channel id to connected sockets. It lives in memory
@@ -37,7 +37,7 @@ class RedactChannelIds(logging.Filter):
     """Strip channel digests out of log records.
 
     Our own logging never emits a channel id, but uvicorn's access log writes
-    the full request path — which carries it. That matters more than it looks:
+    the full request path, which carries it. That matters more than it looks:
     a journey code is six characters, so its SHA-256 is trivially reversible
     from a precomputed table. Deriving the channel on the client buys nothing
     if the relay writes it to disk. Scrub it wherever it surfaces.
@@ -63,7 +63,7 @@ for _name in ("uvicorn.access", "uvicorn.error", "websockets.server"):
 
 # Channel ids are the client-side SHA-256 of a journey code, so the relay never
 # learns the code itself. Anything that is not a 64-character hex digest is
-# rejected outright — this is also what stops arbitrary channel names.
+# rejected outright, which also stops arbitrary channel names.
 CHANNEL_ID = re.compile(r"^[0-9a-f]{64}$")
 
 # WebSocket upgrades are not subject to CORS; this only covers /v1/health.
@@ -103,11 +103,11 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    """Kept deliberately.
+    """Kept for platform health checks.
 
-    The previous service answered here, and hosting platforms are commonly
-    configured to health-check `/`. Removing it would turn a deploy into a
-    rollback for a reason that has nothing to do with the code.
+    The previous service answered here, and hosts are commonly configured to
+    probe `/`. Dropping it would turn a deploy into a rollback for a reason
+    that has nothing to do with the code.
     """
     return {"service": "waysera-relay", "ok": True}
 
@@ -139,8 +139,8 @@ async def relay(websocket: WebSocket, channel_id: str):
         await websocket.close(code=1008, reason="channel full")
         return
 
-    # Deliberately logs occupancy only. Channel ids are derived from journey
-    # codes, so recording them would undercut the point of the design.
+    # Occupancy only. Channel ids come from journey codes, so writing one to a
+    # log would undo the point of hashing it on the client.
     logger.info("socket joined (occupancy %d)", hub.occupancy(channel_id))
 
     bucket = TokenBucket(limits.messages_per_second, limits.burst)

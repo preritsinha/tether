@@ -81,7 +81,7 @@ class Page:
     async def navigate(self, url, ready="typeof window.startJourney === 'function'"):
         """Navigate and wait for the page's own signal, not a fixed delay.
 
-        The readiness expression differs per page — the replay view never loads
+        The readiness expression differs per page. The replay view never loads
         index.js, so it has no startJourney to wait for.
         """
         await self.call("Page.navigate", {"url": url})
@@ -179,7 +179,7 @@ async def run() -> list[str]:
 
     # Point the client at our relay, then create a journey and enter it.
     # startJourney is called directly rather than through the rendered button so
-    # no display name is remembered — that keeps the second page from
+    # no display name is remembered. That keeps the second page from
     # auto-joining under the first page's identity.
     created = await host.json_eval(f"""
         (async () => {{
@@ -204,7 +204,7 @@ async def run() -> list[str]:
     if len(code) != 6:
         failures.append(f"unexpected journey code {code!r}")
 
-    # The key must be in the fragment, never the query — that is what keeps it
+    # The key must be in the fragment, never the query. That is what keeps it
     # away from the static host and the relay.
     if "#" not in link or link.index("#") > link.index("k="):
         failures.append(f"invite key is not in the fragment: {link}")
@@ -239,7 +239,7 @@ async def run() -> list[str]:
         """Wait for the roster to settle, not merely to be populated.
 
         A position can arrive before its sender's hello, so an entry legitimately
-        exists with no name for a moment — the UI shows 'Someone' until it
+        exists with no name for a moment, and the UI shows 'Someone' until it
         resolves. Waiting only on the count made this test race.
         """
         names = []
@@ -280,8 +280,8 @@ async def run() -> list[str]:
         f"WayseraCrypto.deriveChannelId('{code}')", await_promise=True
     )
 
-    # A late joiner must receive nothing that already happened — the relay keeps
-    # no buffer. Heartbeats are paused first, otherwise the eavesdropper would
+    # A late joiner must receive nothing that already happened, because the
+    # relay keeps no buffer. Heartbeats are paused first, otherwise the eavesdropper would
     # see live traffic within seconds and the check would prove nothing.
     for page in (host, guest):
         await page.evaluate("clearInterval(session.heartbeatTimer), true")
@@ -315,12 +315,12 @@ async def run() -> list[str]:
 
     leaked = await listener
     if leaked is None:
-        failures.append("eavesdropper saw no live traffic — check the test")
+        failures.append("eavesdropper saw no live traffic; check the test")
     else:
         # The frames must be envelopes and nothing else.
         for secret in ("Gateway", "19.076", "Need fuel", "need-fuel", "Alex", "Riya"):
             if secret in leaked:
-                failures.append(f"RELAY TRAFFIC IS READABLE — found {secret!r}")
+                failures.append(f"RELAY TRAFFIC IS READABLE: found {secret!r}")
         for line in leaked.splitlines():
             try:
                 frame = json.loads(line)
@@ -389,8 +389,8 @@ async def run() -> list[str]:
 async def eavesdrop(channel_id: str, seconds: float, want: int = 1):
     """Join the channel as an unauthorised third party and read what passes.
 
-    Anyone can do this — the channel id is derived from a six-character code
-    and the relay asks nothing of whoever connects. That is precisely why the
+    Anyone can do this. The channel id comes from a six-character code and the
+    relay asks nothing of whoever connects. That is precisely why the
     payloads have to be unreadable.
     """
     url = f"ws://127.0.0.1:{RELAY_PORT}/v1/relay/{channel_id}"

@@ -21,7 +21,7 @@ Never write:
 - WAYSERA in headings or prose
 - "the Waysera"
 
-The compound reads as *Way + sera*, but that is expressed through the logo — weight and colour contrast in the wordmark — never through camel case in the string itself. One spelling everywhere: docs, code identifiers, domain, handles.
+The compound reads as *Way + sera*, but the logo expresses that through weight and colour contrast in the wordmark, never through camel case in the string itself. One spelling everywhere: docs, code identifiers, domain, handles.
 
 ## 3. Product category
 
@@ -53,9 +53,9 @@ Waysera removes the repeated questions: Where are you? Who has left? Who is behi
 
 ## 8. Brand personality
 
-Waysera should feel: **calm · human · dependable · lightweight · friendly · modern · clear · reassuring**
+Waysera should feel **calm, human, dependable, lightweight, friendly, modern, clear and reassuring.**
 
-Waysera should never feel: like surveillance software · like a logistics dashboard · military or convoy-oriented · overly futuristic · corporate or technical · childish or emoji-heavy · like a generic map clone
+It should never feel like surveillance software, a logistics dashboard, something military or convoy-oriented, overly futuristic, corporate, childish, emoji-heavy, or a generic map clone.
 
 ## 9. User-facing terminology
 
@@ -225,7 +225,7 @@ This is **not** true, and must never be written:
 
 The client still contacts third parties that receive location data: **Mapbox** (map tiles), **Nominatim** (destination search), and **openstreetmap.de** (routing — origin *and* destination). Any privacy copy must stay within what the architecture actually delivers.
 
-Encryption may be described factually only once it ships. Do not describe planned capability as present capability.
+Describe encryption factually, and only once it ships. Planned capability is not present capability.
 
 ## 16. Dark mode
 

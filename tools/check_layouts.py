@@ -140,7 +140,7 @@ async def run():
                     if metrics["scrollWidth"] > metrics["clientWidth"] + 1:
                         widest = metrics.get("widest")
                         detail = (
-                            f" — widest offender <{widest['tag']} class=\"{widest['cls']}\"> "
+                            f". Widest offender: <{widest['tag']} class=\"{widest['cls']}\"> "
                             f"overhangs by {widest['overhang']}px"
                             if widest
                             else ""
