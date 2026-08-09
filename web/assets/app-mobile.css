@@ -1545,3 +1545,129 @@ a,
   }
 }
 
+
+/* ============= Journey code, group list, join requests ============= */
+
+.journey-code-display {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  text-align: center;
+  padding: var(--space-4);
+  margin: var(--space-3) 0;
+  color: var(--waysera-primary);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.group-empty {
+  padding: var(--space-4);
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+.group-member {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--waysera-primary);
+}
+
+.group-member:last-child {
+  border-bottom: none;
+}
+
+.group-member-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.group-status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: capitalize;
+}
+
+/* Status is semantic, not brand — it must read the same whatever the palette. */
+.group-status-live {
+  color: #065F46;
+  background: rgba(52, 199, 89, 0.18);
+}
+
+.group-status-stale {
+  color: #92400E;
+  background: rgba(255, 149, 0, 0.18);
+}
+
+.group-status-offline {
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+}
+
+.group-member-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+
+.group-fact:empty {
+  display: none;
+}
+
+/* Join approval. Deliberately prominent: granting the journey key is the one
+   decision a hostile relay cannot make on the user's behalf. */
+.join-request {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 10002;
+  width: calc(100% - 32px);
+  max-width: 420px;
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.join-request-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.join-request-body {
+  font-size: 13.5px;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-3);
+}
+
+.join-request-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.join-request-actions .btn {
+  flex: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .group-status-live {
+    color: #6EE7B7;
+    background: rgba(52, 199, 89, 0.16);
+  }
+
+  .group-status-stale {
+    color: #FCD34D;
+    background: rgba(255, 149, 0, 0.16);
+  }
+}

@@ -546,6 +546,243 @@
     });
 
     // =====================================================================
+    // journey session
+    // =====================================================================
+
+    const J = () => window.WayseraJourney;
+
+    /**
+     * Wire two sessions directly to each other, standing in for the relay.
+     * Frames are JSON-round-tripped so the sessions see exactly what a real
+     * socket would deliver.
+     */
+    function connectPair(a, b) {
+        const inflight = [];
+        const link = (from, to) => {
+            from.rawSend = (frame) => {
+                inflight.push(to.handleFrame(JSON.stringify(frame)));
+                return true;
+            };
+        };
+        link(a, b);
+        link(b, a);
+
+        return async function settle() {
+            // Handlers dispatch further frames, so drain until quiet.
+            for (let pass = 0; pass < 20 && inflight.length; pass += 1) {
+                await Promise.all(inflight.splice(0));
+            }
+        };
+    }
+
+    async function makeSession(overrides = {}) {
+        return new (J().Session)({
+            code: 'ABC234',
+            name: 'Someone',
+            relayBase: 'http://localhost',
+            ...overrides
+        });
+    }
+
+    test('member ids satisfy the validator', () => {
+        for (let i = 0; i < 50; i += 1) {
+            const id = J().generateMemberId();
+            assert(V().memberId(id) !== null, `generated id must validate: ${id}`);
+        }
+    });
+
+    test('status moves live to stale to offline with age', () => {
+        const now = 1000000;
+        assertEqual(J().statusFor(now, now), 'live');
+        assertEqual(J().statusFor(now - 5000, now), 'live');
+        assertEqual(J().statusFor(now - 20000, now), 'stale');
+        assertEqual(J().statusFor(now - 60000, now), 'offline');
+    });
+
+    test('a position from a peer lands on the roster', async () => {
+        const key = await C().generateJourneyKey();
+        const host = await makeSession({ key, name: 'Host' });
+        const peer = await makeSession({ key, name: 'Peer' });
+        const settle = connectPair(host, peer);
+
+        await peer.sendPosition({ lat: 19.076, lng: 72.8777, heading: 90, speed: 12 });
+        await settle();
+
+        const entry = host.roster().find((m) => m.memberId === peer.memberId);
+        assert(entry, 'peer should appear on the roster');
+        assertEqual(entry.lat, 19.076);
+        assertEqual(entry.speed, 12);
+        assertEqual(entry.status, 'live');
+    });
+
+    test('a session ignores frames it cannot open', async () => {
+        const host = await makeSession({ key: await C().generateJourneyKey() });
+        const stranger = await makeSession({ key: await C().generateJourneyKey() });
+        const settle = connectPair(host, stranger);
+
+        await stranger.sendPosition({ lat: 1, lng: 1 });
+        await settle();
+
+        assertEqual(host.roster().length, 0, 'a different key must not reach the roster');
+    });
+
+    test('bye removes the member immediately', async () => {
+        const key = await C().generateJourneyKey();
+        const host = await makeSession({ key, name: 'Host' });
+        const peer = await makeSession({ key, name: 'Peer' });
+        const settle = connectPair(host, peer);
+
+        await peer.announce();
+        await settle();
+        assertEqual(host.roster().length, 1);
+
+        await host.handleFrame(
+            JSON.stringify(await C().seal(key, {
+                type: 'bye', memberId: peer.memberId, ts: Date.now()
+            }))
+        );
+        assertEqual(host.roster().length, 0, 'bye should drop the member');
+    });
+
+    test('journey config reaches someone who joined by link', async () => {
+        const key = await C().generateJourneyKey();
+        const host = await makeSession({
+            key,
+            name: 'Host',
+            destination: { name: 'Gateway of India', lat: 18.922, lng: 72.834 }
+        });
+        const joiner = await makeSession({ key, name: 'Joiner' });
+        const settle = connectPair(host, joiner);
+
+        assertEqual(joiner.destination, null, 'joiner starts with no destination');
+
+        await joiner.announce();
+        await settle();
+
+        assert(joiner.destination !== null, 'host should have shared the destination');
+        assertEqual(joiner.destination.name, 'Gateway of India');
+    });
+
+    test('code-only join completes through the approved handoff', async () => {
+        const key = await C().generateJourneyKey();
+        const host = await makeSession({
+            key,
+            name: 'Host',
+            destination: { name: 'Gateway of India', lat: 18.922, lng: 72.834 }
+        });
+        const joiner = await makeSession({ key: null, name: 'Riya' });
+        const settle = connectPair(host, joiner);
+
+        let prompted = null;
+        host.on('key_request', (request) => { prompted = request; });
+
+        await joiner.requestKey();
+        await settle();
+
+        assert(prompted !== null, 'host must be prompted, never auto-granted');
+        assertEqual(prompted.name, 'Riya');
+        assertEqual(joiner.key, null, 'no key before approval');
+
+        await host.approveKeyRequest(joiner.memberId);
+        await settle();
+
+        assert(joiner.key !== null, 'joiner should hold the journey key');
+
+        // The granted key must actually open host traffic, and the joiner
+        // should have been brought up to speed on the destination.
+        await host.sendPosition({ lat: 19.076, lng: 72.8777 });
+        await settle();
+
+        const entry = joiner.roster().find((m) => m.memberId === host.memberId);
+        assert(entry, 'host should be visible to the joiner');
+        assertEqual(entry.lat, 19.076);
+        assertEqual(joiner.destination.name, 'Gateway of India');
+    });
+
+    test('denying a request hands over nothing', async () => {
+        const host = await makeSession({ key: await C().generateJourneyKey(), name: 'Host' });
+        const joiner = await makeSession({ key: null, name: 'Stranger' });
+        const settle = connectPair(host, joiner);
+
+        await joiner.requestKey();
+        await settle();
+
+        host.denyKeyRequest(joiner.memberId);
+        await settle();
+
+        assertEqual(joiner.key, null, 'denial must leave the joiner without a key');
+
+        // And a later approval attempt for the same id must find nothing pending.
+        assertEqual(await host.approveKeyRequest(joiner.memberId), false);
+        await settle();
+        assertEqual(joiner.key, null);
+    });
+
+    test('a key grant addressed to someone else is ignored', async () => {
+        const host = await makeSession({ key: await C().generateJourneyKey(), name: 'Host' });
+        const joiner = await makeSession({ key: null, name: 'Joiner' });
+        const settle = connectPair(host, joiner);
+
+        await joiner.requestKey();
+        await settle();
+
+        // Approve, but rewrite the grant to name a different recipient.
+        const original = host.sendHandshake.bind(host);
+        host.sendHandshake = (message) =>
+            original({ ...message, forMemberId: 'm_ffffffffffff' });
+
+        await host.approveKeyRequest(joiner.memberId);
+        await settle();
+
+        assertEqual(joiner.key, null, 'a grant for another member must not apply');
+    });
+
+    test('handshake frames stay outside the sealed envelope', async () => {
+        const joiner = await makeSession({ key: null, name: 'Riya' });
+        const sent = [];
+        joiner.rawSend = (frame) => { sent.push(frame); return true; };
+
+        await joiner.requestKey();
+
+        assertEqual(sent.length, 1);
+        assert(sent[0].hs, 'a key request must travel as a handshake frame');
+        assertEqual(sent[0].iv, undefined, 'it cannot be sealed — there is no key yet');
+        assertEqual(sent[0].hs.type, 'key_request');
+    });
+
+    test('stale members are dropped once past the timeout', async () => {
+        const key = await C().generateJourneyKey();
+        const host = await makeSession({ key, name: 'Host' });
+        const peer = await makeSession({ key, name: 'Peer' });
+        const settle = connectPair(host, peer);
+
+        await peer.announce();
+        await settle();
+        assertEqual(host.roster().length, 1);
+
+        const entry = host.members.get(peer.memberId);
+        entry.lastSeen = Date.now() - (J().DROP_MS + 1000);
+
+        host.pruneRoster();
+        assertEqual(host.roster().length, 0, 'a long-silent member should be dropped');
+    });
+
+    test('the roster puts you first', async () => {
+        const key = await C().generateJourneyKey();
+        const host = await makeSession({ key, name: 'Zara' });
+        const peer = await makeSession({ key, name: 'Aarav' });
+        const settle = connectPair(host, peer);
+
+        host.trackSelf({ lat: 0, lng: 0 });
+        await peer.announce();
+        await settle();
+
+        const roster = host.roster();
+        assertEqual(roster.length, 2);
+        assert(roster[0].isSelf, 'you should sort to the top regardless of name');
+    });
+
+    // =====================================================================
     // runner
     // =====================================================================
 

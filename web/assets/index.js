@@ -1,169 +1,32 @@
-// ============= HOME PAGE LOGIC =============
-// CONFIG is defined in app.js
+// ============= WAYSERA JOURNEY LIFECYCLE =============
+// CONFIG lives in app.js. Crypto, storage, validation and the relay session
+// live in crypto.js / store.js / validate.js / journey.js.
+//
+// There is no server to ask about a journey any more. A journey is created on
+// this device, its key travels in the invite fragment, and everything else
+// arrives from peers over the relay.
 
-async function createRoom() {
-    try {
-        const name = document.getElementById('destName').value;
-        const lat = parseFloat(document.getElementById('destLat').value);
-        const lng = parseFloat(document.getElementById('destLng').value);
-        const duration = parseInt(document.getElementById('duration').value) || 180;
+const NAME_KEY = 'waysera.name';
 
-        console.log('Creating room:', { name, lat, lng, duration });
-
-        if (!name || isNaN(lat) || isNaN(lng)) {
-            alert('Please fill in all fields');
-            return;
-        }
-
-        // Create room
-        const createResponse = await fetch(`${CONFIG.API_BASE}/rooms`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                destination_name: name,
-                destination_lat: lat,
-                destination_lng: lng,
-                duration_minutes: duration
-            })
-        });
-
-        if (!createResponse.ok) {
-            throw new Error(`Failed to create room: ${createResponse.status}`);
-        }
-
-        const roomData = await createResponse.json();
-        console.log('✅ Room created:', roomData);
-
-        // Show result with invite link
-        const resultDiv = document.getElementById('createResult');
-        resultDiv.innerHTML = `
-            <div style="padding: 16px; background: #e8f5e9; border-radius: 8px;">
-                <h3>Room Created!</h3>
-                <p><strong>Code:</strong> ${roomData.room_id}</p>
-                <p><strong>Invite Link:</strong></p>
-                <input type="text" readonly value="${window.location.origin}?room=${roomData.room_id}" 
-                       style="width: 100%; padding: 8px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px;">
-                <p style="margin-top: 12px;"><strong>Enter your name to join:</strong></p>
-                <input type="text" id="creatorName" placeholder="Your name" 
-                       style="width: 100%; padding: 8px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px;">
-                <button class="btn btn-primary" onclick="joinCreatedRoom('${roomData.room_id}')">
-                    Join Room
-                </button>
-            </div>
-        `;
-        resultDiv.style.display = 'block';
-
-    } catch (error) {
-        console.error('❌ Error creating room:', error);
-        alert('Error creating room: ' + error.message);
-    }
-}
-
-async function joinCreatedRoom(roomCode) {
-    try {
-        const name = document.getElementById('creatorName').value.trim();
-        
-        if (!name) {
-            alert('Please enter your name');
-            return;
-        }
-
-        // Join the room
-        const joinResponse = await fetch(`${CONFIG.API_BASE}/rooms/${roomCode}/join`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name })
-        });
-
-        if (!joinResponse.ok) {
-            throw new Error(`Failed to join room: ${joinResponse.status}`);
-        }
-
-        const joinData = await joinResponse.json();
-        console.log('✅ Joined created room:', joinData);
-
-        // Store credentials
-        localStorage.setItem('member_id', joinData.member_id);
-        localStorage.setItem('token', joinData.token);
-        localStorage.setItem('room_code', roomCode);
-
-        // Redirect to room page
-        window.location.href = `/?room=${roomCode}`;
-        
-    } catch (error) {
-        console.error('❌ Error joining created room:', error);
-        alert('Error joining room: ' + error.message);
-    }
-}
-
-function goToRoom(roomCode) {
-    console.log('📍 Going to room:', roomCode);
-    window.location.href = `/?room=${roomCode}`;
-}
-
-async function joinRoom() {
-    try {
-        const name = document.getElementById('joinName').value;
-        const roomCode = document.getElementById('roomCode').value.toUpperCase();
-
-        console.log('Joining room:', { name, roomCode });
-
-        if (!name || !roomCode) {
-            alert('Please enter name and room code');
-            return;
-        }
-
-        // Fetch room to verify it exists
-        const roomResponse = await fetch(`${CONFIG.API_BASE}/rooms/${roomCode}`);
-        if (!roomResponse.ok) {
-            throw new Error(`Room not found: ${roomCode}`);
-        }
-
-        const roomData = await roomResponse.json();
-        console.log('✅ Room found:', roomData);
-
-        // Join room
-        const joinResponse = await fetch(`${CONFIG.API_BASE}/rooms/${roomCode}/join`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name })
-        });
-
-        if (!joinResponse.ok) {
-            throw new Error(`Failed to join room: ${joinResponse.status}`);
-        }
-
-        const joinData = await joinResponse.json();
-        console.log('✅ Joined room:', joinData);
-
-        // Store member info
-        localStorage.setItem('member_id', joinData.member_id);
-        localStorage.setItem('token', joinData.token);
-        localStorage.setItem('room_code', roomCode);
-
-        // Navigate to room
-        window.location.href = `/?room=${roomCode}`;
-
-    } catch (error) {
-        console.error('❌ Error joining room:', error);
-        alert('Error joining room: ' + error.message);
-    }
-}
-
-// ============= ROOM PAGE LOGIC =============
-
+// The view model deliberately keeps the shape the map, routing and navigation
+// code already expects, so none of that had to change: room_id, destination,
+// and a members map keyed by id with last_location.
 let currentRoom = null;
 let currentMemberId = null;
-let currentToken = null;
+let session = null;
+
 let map = null;
 let markers = {};
 let destMarker = null;
-let ws = null;
-let locationInterval = null;
-let demoMode = false;
-let demoSimulator = null;
 let routingControls = {};
 let showDirections = false;
+
+// Geolocation and demo mode used to share one variable, which meant leaveRoom()
+// called clearInterval on a watchPosition id and silently left GPS running.
+// They are separate handles now, cleared with the matching API.
+let geoWatchId = null;
+let demoIntervalId = null;
+let demoMode = false;
 
 // Navigation state
 let navigationActive = false;
@@ -174,58 +37,319 @@ let lastKnownLocation = null;
 let currentHeading = 0;
 let currentSpeed = 0;
 let userLocationMarker = null;
-let routeUpdateThrottle = null;
 let lastRouteUpdate = 0;
 
-async function loadRoomPage(roomCode, memberId, token) {
-    try {
-        console.log('📍 Loading room:', roomCode);
-        
-        currentMemberId = memberId;
-        currentToken = token;
-        
-        // Hide home page, show room page
-        document.getElementById('homePage').style.display = 'none';
-        document.getElementById('roomPage').style.display = 'block';
-        
-        // Fetch room data
-        const response = await fetch(`${CONFIG.API_BASE}/rooms/${roomCode}`);
-        if (!response.ok) {
-            throw new Error(`Failed to load room: ${response.status}`);
+// ---------------------------------------------------------------- helpers
+
+function rememberName(name) {
+    try { localStorage.setItem(NAME_KEY, name); } catch (error) { /* private mode */ }
+}
+
+function recallName() {
+    try { return localStorage.getItem(NAME_KEY) || ''; } catch (error) { return ''; }
+}
+
+function relayBase() {
+    return CONFIG.API_BASE;
+}
+
+function personCount(count) {
+    return `${count} ${count === 1 ? 'person' : 'people'}`;
+}
+
+function formatEndsIn(expiresAt) {
+    if (!expiresAt) return '';
+    const remaining = expiresAt - Date.now();
+    if (remaining <= 0) return 'This journey has ended';
+
+    const minutes = Math.floor(remaining / 60000);
+    const hours = Math.floor(minutes / 60);
+    return hours > 0 ? `Ends in ${hours}h ${minutes % 60}m` : `Ends in ${minutes}m`;
+}
+
+// ------------------------------------------------------------ create journey
+
+async function createJourney() {
+    const nameInput = document.getElementById('destName');
+    const destination = {
+        name: WayseraValidate.cleanName(nameInput.value),
+        lat: parseFloat(document.getElementById('destLat').value),
+        lng: parseFloat(document.getElementById('destLng').value)
+    };
+    const duration = parseInt(document.getElementById('duration').value, 10) || 180;
+
+    if (!destination.name || !Number.isFinite(destination.lat) || !Number.isFinite(destination.lng)) {
+        showError('createResult', 'Add a destination and its coordinates to start.');
+        return;
+    }
+
+    const code = WayseraCrypto.generateJourneyCode();
+    const key = await WayseraCrypto.generateJourneyKey();
+    const encodedKey = await WayseraCrypto.exportJourneyKey(key);
+
+    const journey = {
+        code,
+        key,
+        destination,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + duration * 60000
+    };
+    await WayseraStore.putJourney(journey);
+
+    const inviteLink = WayseraCrypto.buildInviteLink(window.location.origin, code, encodedKey);
+    renderJourneyReady(code, inviteLink);
+}
+
+function renderJourneyReady(code, inviteLink) {
+    const panel = document.getElementById('createResult');
+    panel.className = 'result success';
+    panel.style.display = 'block';
+    panel.replaceChildren();
+
+    const heading = document.createElement('h3');
+    heading.textContent = 'Your journey is ready';
+
+    const hint = document.createElement('p');
+    hint.textContent = 'Share this journey code with your group:';
+
+    const codeBox = document.createElement('div');
+    codeBox.className = 'journey-code-display';
+    codeBox.textContent = code;
+
+    const share = document.createElement('button');
+    share.type = 'button';
+    share.className = 'btn btn-secondary btn-full';
+    share.textContent = 'Share invite';
+    share.onclick = () => shareInvite(inviteLink);
+
+    const namePrompt = document.createElement('p');
+    namePrompt.textContent = 'Enter your name to join the journey.';
+
+    const nameField = document.createElement('input');
+    nameField.type = 'text';
+    nameField.className = 'form-control';
+    nameField.placeholder = 'Your name';
+    nameField.value = recallName();
+
+    const go = document.createElement('button');
+    go.type = 'button';
+    go.className = 'btn btn-primary btn-full';
+    go.textContent = 'Join journey';
+    go.onclick = () => {
+        const name = WayseraValidate.cleanName(nameField.value);
+        if (!name) {
+            showError('createResult', 'Add your name so your group knows who you are.');
+            return;
+        }
+        rememberName(name);
+        startJourney(code, name);
+    };
+
+    panel.append(heading, hint, codeBox, share, namePrompt, nameField, go);
+}
+
+async function shareInvite(inviteLink) {
+    if (navigator.share) {
+        try {
+            await navigator.share({ title: 'Waysera', text: 'Join my journey', url: inviteLink });
+            return;
+        } catch (error) {
+            // Cancelled, or unsupported in this context — fall through to copy.
+        }
+    }
+    copyToClipboard(inviteLink);
+    alert('Invite link copied.');
+}
+
+// -------------------------------------------------------------- join journey
+
+async function joinJourney() {
+    const name = WayseraValidate.cleanName(document.getElementById('joinName').value);
+    const code = WayseraCrypto.normaliseCode(document.getElementById('roomCode').value);
+
+    if (!name) {
+        showError('joinResult', 'Add your name so your group knows who you are.');
+        return;
+    }
+    if (!WayseraCrypto.isValidCode(code)) {
+        showError('joinResult', 'That journey code does not look right. Check it and try again.');
+        return;
+    }
+
+    rememberName(name);
+    startJourney(code, name);
+}
+
+// ----------------------------------------------------------- journey session
+
+async function startJourney(code, name) {
+    const stored = await WayseraStore.getJourney(code);
+
+    currentRoom = {
+        room_id: code,
+        destination: stored && stored.destination ? stored.destination : null,
+        expires_at: stored ? stored.expiresAt : null,
+        members: {}
+    };
+
+    session = new WayseraJourney.Session({
+        code,
+        key: stored ? stored.key : null,
+        name,
+        relayBase: relayBase(),
+        destination: currentRoom.destination,
+        expiresAt: currentRoom.expires_at
+    });
+    currentMemberId = session.memberId;
+
+    wireSession(session);
+
+    document.getElementById('homePage').style.display = 'none';
+    document.getElementById('roomPage').style.display = 'block';
+
+    WayseraValidate.setText(document.getElementById('roomCodeDisplay'), `Journey code: ${code}`);
+    WayseraValidate.setText(
+        document.getElementById('destNameDisplay'),
+        currentRoom.destination ? currentRoom.destination.name : 'Waiting for your group…'
+    );
+
+    WayseraStore.setActiveJourney(code);
+
+    if (currentRoom.destination) initializeMap();
+    await session.connect();
+
+    startTimer();
+    updateNavigationButtonState();
+    checkLocationPermissionStatus();
+    setTimeout(() => startLocationTracking(), 1000);
+}
+
+function wireSession(activeSession) {
+    activeSession.on('roster', (roster) => {
+        // Keep the legacy members map in step so routing and navigation, which
+        // read currentRoom.members, keep working unchanged.
+        currentRoom.members = {};
+        for (const member of roster) {
+            currentRoom.members[member.memberId] = {
+                member_id: member.memberId,
+                name: member.isSelf ? 'You' : member.name,
+                last_location:
+                    member.lat === undefined || member.lat === null
+                        ? null
+                        : { lat: member.lat, lng: member.lng },
+                status: member.status
+            };
+            if (member.lat !== undefined && member.lat !== null && map) {
+                updateMemberMarker(
+                    member.memberId,
+                    member.isSelf ? 'You' : member.name,
+                    { lat: member.lat, lng: member.lng },
+                    member.status
+                );
+            }
         }
 
-        currentRoom = await response.json();
-        console.log('✅ Room loaded:', currentRoom);
+        WayseraValidate.setText(
+            document.getElementById('memberCount'),
+            personCount(roster.length)
+        );
+        renderGroup(roster);
 
-        // Update UI
-        document.getElementById('destNameDisplay').textContent = currentRoom.destination.name;
-        document.getElementById('roomCodeDisplay').textContent = `Code: ${currentRoom.room_id}`;
-        document.getElementById('memberCount').textContent = `${currentRoom.members_count} ${currentRoom.members_count === 1 ? 'member' : 'members'}`;
-        
-        // Initialize map
-        initializeMap();
-        
-        // Connect WebSocket
-        connectWebSocket(roomCode, memberId, token);
-        
-        // Start timer
+        if (showDirections) drawAllRoutes();
+    });
+
+    activeSession.on('journey_config', async (message) => {
+        currentRoom.destination = message.destination;
+        currentRoom.expires_at = message.expiresAt;
+        WayseraValidate.setText(
+            document.getElementById('destNameDisplay'),
+            message.destination.name
+        );
+
+        // Persist so a reload does not depend on a peer being online.
+        const stored = (await WayseraStore.getJourney(currentRoom.room_id)) || {
+            code: currentRoom.room_id,
+            createdAt: Date.now()
+        };
+        stored.destination = message.destination;
+        stored.expiresAt = message.expiresAt;
+        stored.key = activeSession.key;
+        await WayseraStore.putJourney(stored);
+
+        if (!map) initializeMap();
         startTimer();
-        
-        // Set initial navigation button state
-        updateNavigationButtonState();
-        
-        // Check if we should show location permission banner
-        checkLocationPermissionStatus();
-        
-        // Start location tracking
-        setTimeout(() => startLocationTracking(), 1000);
-        
-    } catch (error) {
-        console.error('❌ Error loading room:', error);
-        alert('Failed to load room: ' + error.message);
-        leaveRoom();
-    }
+    });
+
+    activeSession.on('key_granted', async ({ key }) => {
+        const stored = (await WayseraStore.getJourney(currentRoom.room_id)) || {
+            code: currentRoom.room_id,
+            createdAt: Date.now()
+        };
+        stored.key = key;
+        await WayseraStore.putJourney(stored);
+        showLocationAlert('You are in. Waiting for journey details…');
+    });
+
+    activeSession.on('awaiting_key', () => {
+        WayseraValidate.setText(
+            document.getElementById('destNameDisplay'),
+            'Waiting for someone to let you in…'
+        );
+    });
+
+    activeSession.on('key_request', (request) => showJoinRequest(request));
+
+    activeSession.on('refused', ({ reason }) => {
+        alert(
+            reason === 'channel full'
+                ? 'This journey already has the maximum number of people.'
+                : 'We could not join that journey.'
+        );
+        leaveJourney();
+    });
 }
+
+// ------------------------------------------------------- join approval prompt
+
+function showJoinRequest(request) {
+    const host = document.createElement('div');
+    host.className = 'join-request';
+
+    const title = document.createElement('div');
+    title.className = 'join-request-title';
+    // textContent, not innerHTML: this string came from another device.
+    title.textContent = `${request.name} wants to join`;
+
+    const body = document.createElement('div');
+    body.className = 'join-request-body';
+    body.textContent = 'Only allow this if you recognise the name.';
+
+    const actions = document.createElement('div');
+    actions.className = 'join-request-actions';
+
+    const allow = document.createElement('button');
+    allow.type = 'button';
+    allow.className = 'btn btn-primary';
+    allow.textContent = 'Allow';
+    allow.onclick = () => {
+        session.approveKeyRequest(request.memberId);
+        host.remove();
+    };
+
+    const deny = document.createElement('button');
+    deny.type = 'button';
+    deny.className = 'btn btn-secondary';
+    deny.textContent = 'Not now';
+    deny.onclick = () => {
+        session.denyKeyRequest(request.memberId);
+        host.remove();
+    };
+
+    actions.append(allow, deny);
+    host.append(title, body, actions);
+    document.body.appendChild(host);
+}
+
 
 function initializeMap() {
     try {
@@ -330,109 +454,25 @@ function initializeMap() {
     }
 }
 
-function connectWebSocket(roomCode, memberId, token) {
+// The relay socket, roster and state fan-out all live in journey.js now.
+// What used to be connectWebSocket + updateRoomState is wireSession() above.
+
+
+function updateMemberMarker(memberId, memberName, location, status) {
     try {
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsHost = CONFIG.API_BASE.replace('http://', '').replace('https://', '');
-        const wsUrl = `${wsProtocol}//${wsHost}/ws/rooms/${roomCode}?member_id=${memberId}&token=${token}`;
-        
-        console.log('🔌 Connecting WebSocket:', wsUrl);
-        
-        ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-            console.log('✅ WebSocket connected');
-        };
-
-        ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                
-                if (data.type === 'state') {
-                    // Update room state
-                    updateRoomState(data);
-                } else if (data.type === 'ended') {
-                    alert('Room has ended: ' + data.reason);
-                    leaveRoom();
-                }
-                
-            } catch (error) {
-                console.error('❌ Error processing WebSocket message:', error);
-            }
-        };
-
-        ws.onerror = (error) => {
-            console.error('❌ WebSocket error:', error);
-        };
-
-        ws.onclose = () => {
-            console.log('⚠️ WebSocket closed');
-        };
-
-    } catch (error) {
-        console.error('❌ WebSocket connection error:', error);
-    }
-}
-
-function updateRoomState(state) {
-    try {
-        // Update member count
-        document.getElementById('memberCount').textContent = `${state.members.length} ${state.members.length === 1 ? 'member' : 'members'}`;
-        
-        // Store updated member data
-        if (!currentRoom.members) {
-            currentRoom.members = {};
-        }
-        
-        // Update markers and member data
-        for (const member of state.members) {
-            // Store member data for routing
-            currentRoom.members[member.member_id] = {
-                member_id: member.member_id,
-                name: member.name,
-                last_location: member.last_location,
-                status: member.status
-            };
-            
-            if (member.last_location) {
-                const status = member.status.toLowerCase();
-                updateMemberMarker(member.member_id, member.name, member.initials, member.last_location, status);
-            }
-        }
-        
-        // Update riders list
-        updateRidersList(state.members);
-        
-        // Redraw routes if directions are shown
-        if (showDirections) {
-            drawAllRoutes();
-        }
-        
-    } catch (error) {
-        console.error('❌ Error updating room state:', error);
-    }
-}
-
-function updateMemberMarker(memberId, memberName, initials, location, status) {
-    try {
-        // Special handling for current user with heading indicator
         if (memberId === currentMemberId) {
             updateUserLocationMarker(location, status);
             return;
         }
 
-        // Remove old marker if exists
         if (markers[memberId]) {
             map.removeLayer(markers[memberId]);
         }
 
-        // Create marker with status color
         const iconColor = status === 'live' ? 'green' : status === 'stale' ? 'orange' : 'grey';
-        const iconUrl = `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${iconColor}.png`;
-
         const marker = L.marker([location.lat, location.lng], {
             icon: L.icon({
-                iconUrl: iconUrl,
+                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${iconColor}.png`,
                 shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
                 iconSize: [25, 41],
                 iconAnchor: [12, 41],
@@ -441,11 +481,19 @@ function updateMemberMarker(memberId, memberName, initials, location, status) {
             })
         }).addTo(map);
 
-        marker.bindPopup(`<b>${memberName}</b><br><small>${initials}</small><br>Status: ${status}`);
-        markers[memberId] = marker;
+        // Popups take a DOM node rather than an HTML string: memberName came
+        // from another device, and bindPopup would parse it as markup.
+        const popup = document.createElement('div');
+        const nameLine = document.createElement('strong');
+        nameLine.textContent = memberName || 'Someone';
+        const statusLine = document.createElement('div');
+        statusLine.textContent = status;
+        popup.append(nameLine, statusLine);
+        marker.bindPopup(popup);
 
+        markers[memberId] = marker;
     } catch (error) {
-        console.error(`❌ Error updating marker for ${memberId}:`, error);
+        console.error(`Could not update marker for ${memberId}`, error);
     }
 }
 
@@ -502,158 +550,183 @@ function updateUserLocationMarker(location, status) {
     }
 }
 
-function updateRidersList(members) {
+function renderGroup(roster) {
     const list = document.getElementById('ridersList');
-    
-    const html = members.map(member => {
-        const status = member.status.toLowerCase();
-        const statusEmoji = status === 'live' ? '🟢' : status === 'stale' ? '🟡' : '🔴';
-        
-        let locationText = 'No location';
-        let distanceText = 'N/A';
-        let etaText = '';
-        
-        if (member.last_location) {
-            locationText = `${member.last_location.lat.toFixed(4)}, ${member.last_location.lng.toFixed(4)}`;
-            const distance = haversineDistance(
-                member.last_location.lat,
-                member.last_location.lng,
-                currentRoom.destination.lat,
-                currentRoom.destination.lng
-            );
-            distanceText = `${distance.toFixed(2)} km`;
-            
-            // Calculate ETA assuming average speed of 30 km/h
-            const avgSpeed = 30; // km/h
-            const etaHours = distance / avgSpeed;
-            const etaMinutes = Math.round(etaHours * 60);
-            
-            if (etaMinutes < 1) {
-                etaText = '<div>⏱️ ETA: < 1 min</div>';
-            } else if (etaMinutes < 60) {
-                etaText = `<div>⏱️ ETA: ${etaMinutes} min</div>`;
-            } else {
-                const hours = Math.floor(etaMinutes / 60);
-                const mins = etaMinutes % 60;
-                etaText = `<div>⏱️ ETA: ${hours}h ${mins}m</div>`;
-            }
-        }
+    if (!list) return;
 
-        return `
-            <div style="padding: 12px; border-bottom: 1px solid #eee; border-left: 3px solid ${getRouteColor(member.member_id)};">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                    <strong>${member.name}</strong>
-                    <span>${statusEmoji} ${status}</span>
-                </div>
-                <div style="font-size: 12px; color: #666;">
-                    <div>📏 Distance: ${distanceText}</div>
-                    ${etaText}
-                </div>
-            </div>
-        `;
-    }).join('');
+    list.replaceChildren();
 
-    list.innerHTML = html || '<p style="padding: 12px; color: #999;">No members</p>';
-}
-
-function startTimer() {
-    if (!currentRoom) return;
-
-    const expiresAt = new Date(currentRoom.expires_at);
-    
-    const timerInterval = setInterval(() => {
-        const now = new Date();
-        const remaining = expiresAt - now;
-
-        if (remaining <= 0) {
-            clearInterval(timerInterval);
-            document.getElementById('timer').textContent = 'Expired';
-            return;
-        }
-
-        const hours = Math.floor(remaining / (1000 * 60 * 60));
-        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-
-        document.getElementById('timer').textContent = `${hours}h ${minutes}m ${seconds}s`;
-    }, 1000);
-}
-
-function startLocationTracking() {
-    if (!navigator.geolocation) {
-        console.warn('⚠️ Geolocation not supported, using demo mode');
-        showLocationAlert('Geolocation not supported on this device. Using demo mode.');
-        startDemoMode();
+    if (roster.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'group-empty';
+        empty.textContent = 'Waiting for your group to join…';
+        list.appendChild(empty);
         return;
     }
-    
-    console.log('📍 Requesting geolocation permission...');
-    
-    // For mobile, we need to be more explicit about requesting permissions
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            console.log('✅ Geolocation permission granted');
-            
-            // Send first location immediately
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            console.log('📍 First location:', lat.toFixed(6), lng.toFixed(6));
-            sendLocationUpdate(lat, lng, position.coords.heading, position.coords.speed);
-            
-            // Start watching position
-            console.log('👀 Starting position watch...');
-            locationInterval = navigator.geolocation.watchPosition(
-                (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-                    console.log('📍 Location update:', lat.toFixed(6), lng.toFixed(6));
-                    sendLocationUpdate(lat, lng, pos.coords.heading, pos.coords.speed);
-                },
-                (error) => {
-                    console.warn('⚠️ Geolocation error:', error.message, 'Code:', error.code);
-                    handleLocationError(error);
-                },
-                { 
-                    enableHighAccuracy: true, 
-                    maximumAge: 0, 
-                    timeout: 10000  // Increased timeout for mobile
-                }
-            );
-        },
-        (error) => {
-            console.warn('⚠️ Geolocation permission denied or error:', error.message, 'Code:', error.code);
-            handleLocationError(error);
-        },
-        {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 10000  // Increased timeout for mobile
-        }
+
+    for (const member of roster) {
+        list.appendChild(renderGroupMember(member));
+    }
+}
+
+function renderGroupMember(member) {
+    const row = document.createElement('div');
+    row.className = `group-member status-${member.status}`;
+    row.style.borderLeftColor = getRouteColor(member.memberId);
+
+    const head = document.createElement('div');
+    head.className = 'group-member-head';
+
+    const name = document.createElement('strong');
+    // textContent throughout: every name here arrived from another device.
+    name.textContent = member.isSelf ? 'You' : member.name || 'Someone';
+
+    const status = document.createElement('span');
+    status.className = `group-status group-status-${member.status}`;
+    status.textContent = member.status;
+
+    head.append(name, status);
+    row.appendChild(head);
+
+    const facts = document.createElement('div');
+    facts.className = 'group-member-facts';
+
+    if (member.lat === undefined || member.lat === null) {
+        facts.textContent = 'No location yet';
+    } else {
+        facts.append(
+            fact(`${distanceToDestination(member).toFixed(1)} km to go`),
+            fact(distanceFromMe(member)),
+            fact(formatSpeed(member.speed)),
+            fact(formatHeading(member.heading))
+        );
+    }
+
+    row.appendChild(facts);
+    return row;
+}
+
+function fact(text) {
+    const span = document.createElement('span');
+    span.className = 'group-fact';
+    span.textContent = text;
+    return span;
+}
+
+function distanceToDestination(member) {
+    if (!currentRoom || !currentRoom.destination) return 0;
+    return haversineDistance(
+        member.lat, member.lng,
+        currentRoom.destination.lat, currentRoom.destination.lng
     );
 }
 
-function handleLocationError(error) {
-    let message = '';
-    
-    switch(error.code) {
-        case error.PERMISSION_DENIED:
-            message = '📍 Location permission denied.\n\nTo use real location:\n1. Go to browser settings\n2. Allow location for this site\n3. Refresh the page\n\nUsing demo mode for now.';
-            break;
-        case error.POSITION_UNAVAILABLE:
-            message = '📍 Location unavailable.\n\nTry:\n- Moving to a location with better GPS signal\n- Enabling location services\n\nUsing demo mode for now.';
-            break;
-        case error.TIMEOUT:
-            message = '📍 Location request timed out.\n\nTry:\n- Checking your GPS/location settings\n- Moving outside or near a window\n\nUsing demo mode for now.';
-            break;
-        default:
-            message = '📍 Location error.\n\nUsing demo mode for now.';
-    }
-    
-    showLocationAlert(message);
-    
-    if (!demoMode) {
+/** Distance between this person and you — the thing a convoy actually asks. */
+function distanceFromMe(member) {
+    if (member.isSelf || !lastKnownLocation) return '';
+    const km = haversineDistance(
+        lastKnownLocation.lat, lastKnownLocation.lng, member.lat, member.lng
+    );
+    return km < 1 ? `${Math.round(km * 1000)} m from you` : `${km.toFixed(1)} km from you`;
+}
+
+function formatSpeed(speed) {
+    if (speed === null || speed === undefined) return '';
+    return `${Math.round(speed * 3.6)} km/h`;
+}
+
+function formatHeading(heading) {
+    if (heading === null || heading === undefined) return '';
+    const points = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    return points[Math.round(heading / 45) % 8];
+}
+
+let timerInterval = null;
+
+function startTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    if (!currentRoom || !currentRoom.expires_at) return;
+
+    const tick = () => {
+        const label = formatEndsIn(currentRoom.expires_at);
+        WayseraValidate.setText(document.getElementById('timer'), label);
+        if (label === 'This journey has ended') clearInterval(timerInterval);
+    };
+
+    tick();
+    timerInterval = setInterval(tick, 1000);
+}
+
+
+function startLocationTracking() {
+    if (!navigator.geolocation) {
+        showLocationAlert('This device cannot share location. Using demo mode.');
         startDemoMode();
+        return;
     }
+
+    const options = { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 };
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            publishPosition(position.coords);
+
+            // watchPosition returns a watch id, cleared with clearWatch — not
+            // an interval id. Keeping it in its own variable is what stops
+            // leaveJourney() from leaving GPS running.
+            geoWatchId = navigator.geolocation.watchPosition(
+                (pos) => publishPosition(pos.coords),
+                handleLocationError,
+                options
+            );
+        },
+        handleLocationError,
+        options
+    );
+}
+
+function publishPosition(coords) {
+    const position = {
+        lat: coords.latitude,
+        lng: coords.longitude,
+        heading: Number.isFinite(coords.heading) ? coords.heading : null,
+        speed: Number.isFinite(coords.speed) ? coords.speed : null,
+        accuracy: Number.isFinite(coords.accuracy) ? coords.accuracy : null
+    };
+
+    const first = !lastKnownLocation;
+    lastKnownLocation = { lat: position.lat, lng: position.lng };
+    currentUserLocation = lastKnownLocation;
+    currentHeading = position.heading || 0;
+    currentSpeed = position.speed || 0;
+
+    if (session) session.sendPosition(position);
+    if (map) updateUserLocationMarker(lastKnownLocation, 'live');
+
+    if (first) updateNavigationButtonState();
+    if (navigationActive) updateNavigationProgressThrottled();
+}
+
+function stopLocationTracking() {
+    if (geoWatchId !== null) {
+        navigator.geolocation.clearWatch(geoWatchId);
+        geoWatchId = null;
+    }
+    if (demoIntervalId !== null) {
+        clearInterval(demoIntervalId);
+        demoIntervalId = null;
+    }
+    demoMode = false;
+}
+
+function handleLocationError(error) {
+    const messages = {
+        1: 'Location is turned off for this site. Your group cannot see you — using demo mode.',
+        2: 'We could not get a GPS fix. Using demo mode for now.',
+        3: 'Locating took too long. Using demo mode for now.'
+    };
+    showLocationAlert(messages[error.code] || 'We could not read your location. Using demo mode.');
+    if (!demoMode) startDemoMode();
 }
 
 function showLocationAlert(message) {
@@ -686,66 +759,25 @@ function showLocationAlert(message) {
 
 function startDemoMode() {
     if (demoMode) return;
-    
-    console.log('🎮 Starting demo mode - simulating location');
+    if (!currentRoom || !currentRoom.destination) return;
+
     demoMode = true;
-    
     const destination = currentRoom.destination;
     let angle = Math.random() * Math.PI * 2;
-    const radius = 0.01; // ~1km
+    const radiusDegrees = 0.01; // roughly a kilometre
 
-    locationInterval = setInterval(() => {
+    demoIntervalId = setInterval(() => {
         angle += (Math.random() - 0.5) * 0.5;
-        
-        const lat = destination.lat + (radius * Math.cos(angle));
-        const lng = destination.lng + (radius * Math.sin(angle));
-
-        sendLocationUpdate(lat, lng, angle * 180 / Math.PI, 15);
+        publishPosition({
+            latitude: destination.lat + radiusDegrees * Math.cos(angle),
+            longitude: destination.lng + radiusDegrees * Math.sin(angle),
+            heading: (angle * 180) / Math.PI,
+            speed: 15,
+            accuracy: 20
+        });
     }, 3000);
 }
 
-function sendLocationUpdate(lat, lng, heading, speed) {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-        console.warn('⚠️ WebSocket not ready');
-        return;
-    }
-
-    try {
-        // Store heading and speed
-        currentHeading = heading || 0;
-        currentSpeed = speed || 0;
-        
-        ws.send(JSON.stringify({
-            type: 'location',
-            lat: lat,
-            lng: lng,
-            heading: currentHeading,
-            speed: currentSpeed,
-            ts: Date.now()
-        }));
-        
-        // Store location for navigation - CRITICAL!
-        const isFirstLocation = !lastKnownLocation;
-        lastKnownLocation = { lat, lng };
-        currentUserLocation = { lat, lng };
-        
-        if (isFirstLocation) {
-            console.log('✅ First location stored for navigation:', lat.toFixed(6), lng.toFixed(6));
-            updateNavigationButtonState();
-        }
-        
-        // Update own marker immediately with heading
-        updateMemberMarker(currentMemberId, 'You', 'ME', { lat, lng }, 'live');
-        
-        // Update navigation if active (throttled)
-        if (navigationActive) {
-            updateNavigationProgressThrottled();
-        }
-        
-    } catch (error) {
-        console.error('❌ Error sending location:', error);
-    }
-}
 
 function toggleDirections() {
     showDirections = !showDirections;
@@ -914,15 +946,9 @@ function startNavigation() {
         return;
     }
     
-    // Get current location
     if (!lastKnownLocation) {
-        alert('📍 Acquiring your location...\n\nPlease wait a moment while we get your GPS position, then try again.\n\nTip: Make sure location permissions are enabled!');
-        
-        // Try to trigger location update
-        if (!locationInterval && !demoMode) {
-            console.log('🔄 Attempting to start location tracking...');
-            startLocationTracking();
-        }
+        showLocationAlert('Finding your position — try again in a moment.');
+        if (geoWatchId === null && !demoMode) startLocationTracking();
         return;
     }
     
@@ -1434,35 +1460,33 @@ function updateNavigationButtonState() {
     }
 }
 
-function copyRoomCode() {
+function copyJourneyCode() {
     if (!currentRoom) return;
     copyToClipboard(currentRoom.room_id);
-    alert('✅ Room code copied: ' + currentRoom.room_id);
+    alert('Journey code copied.');
 }
 
-function copyInviteLink() {
-    if (!currentRoom) return;
-    const link = `${window.location.origin}?room=${currentRoom.room_id}`;
-    copyToClipboard(link);
-    alert('✅ Invite link copied!');
+async function shareCurrentInvite() {
+    if (!currentRoom || !session || !session.key) return;
+    const encodedKey = await WayseraCrypto.exportJourneyKey(session.key);
+    const link = WayseraCrypto.buildInviteLink(
+        window.location.origin, currentRoom.room_id, encodedKey
+    );
+    shareInvite(link);
 }
 
-function leaveRoom() {
-    // Stop navigation if active
-    if (navigationActive) {
-        stopNavigation();
-    }
-    
-    // Clean up
+function leaveJourney() {
+    if (navigationActive) stopNavigation();
     clearAllRoutes();
-    
-    if (ws) {
-        ws.close();
-        ws = null;
+    stopLocationTracking();
+
+    if (session) {
+        session.close();
+        session = null;
     }
-    if (locationInterval) {
-        clearInterval(locationInterval);
-        locationInterval = null;
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
     }
     if (userLocationMarker && map) {
         map.removeLayer(userLocationMarker);
@@ -1472,19 +1496,15 @@ function leaveRoom() {
         map.remove();
         map = null;
     }
-    
-    // Clear storage
-    localStorage.removeItem('member_id');
-    localStorage.removeItem('token');
-    localStorage.removeItem('room_code');
-    
-    // Reset state
+
+    // The journey record and its track stay on the device — leaving is not
+    // deleting. Only the pointer to the active journey is cleared.
+    WayseraStore.clearActiveJourney();
+
     currentRoom = null;
     currentMemberId = null;
-    currentToken = null;
     markers = {};
     routingControls = {};
-    demoMode = false;
     showDirections = false;
     navigationActive = false;
     navigationRoute = null;
@@ -1494,9 +1514,8 @@ function leaveRoom() {
     currentHeading = 0;
     currentSpeed = 0;
     lastRouteUpdate = 0;
-    
-    // Go back to home
-    window.location.href = '/';
+
+    window.location.href = window.location.pathname;
 }
 
 function toggleBottomSheet() {
@@ -1510,150 +1529,121 @@ function toggleBottomSheet() {
     }
 }
 
-// ============= PAGE INITIALIZATION =============
+// ============= PAGE INITIALISATION =============
 
-// Check if user is joining from link or loading room
-window.addEventListener('load', () => {
-    console.log('🏠 Page loaded');
-    
-    const params = new URLSearchParams(window.location.search);
-    const roomCode = params.get('room');
-    const joinCode = params.get('join');
-    
-    // If room code in URL and we have credentials, load room
-    if (roomCode) {
-        const memberId = localStorage.getItem('member_id');
-        const token = localStorage.getItem('token');
-        const storedRoom = localStorage.getItem('room_code');
-        
-        if (memberId && token && storedRoom === roomCode) {
-            console.log('📍 Loading room:', roomCode);
-            loadRoomPage(roomCode, memberId, token);
+window.addEventListener('load', async () => {
+    const invite = WayseraCrypto.parseInviteFragment(window.location.hash);
+
+    if (invite) {
+        await enterFromInvite(invite);
+        return;
+    }
+
+    // Resume an active journey after a reload, if we still hold its key.
+    const active = WayseraStore.getActiveJourney();
+    if (active) {
+        const stored = await WayseraStore.getJourney(active);
+        const name = recallName();
+        if (stored && stored.key && name) {
+            startJourney(active, name);
             return;
-        } else {
-            // Clear invalid credentials
-            localStorage.removeItem('member_id');
-            localStorage.removeItem('token');
-            localStorage.removeItem('room_code');
-            // Pre-fill join form
-            document.getElementById('roomCode').value = roomCode;
-            document.getElementById('joinName').focus();
         }
+        WayseraStore.clearActiveJourney();
     }
-    
-    // If join code detected, pre-fill join form
-    if (joinCode) {
-        console.log('📍 Detected join code:', joinCode);
-        document.getElementById('roomCode').value = joinCode;
-        document.getElementById('joinName').focus();
-    }
+
+    prefillName();
 });
 
-// ============= EXPOSE FUNCTIONS TO GLOBAL SCOPE =============
-// Required for onclick handlers in HTML to work
-window.createRoom = createRoom;
-window.joinRoom = joinRoom;
-window.joinCreatedRoom = joinCreatedRoom;
+async function enterFromInvite(invite) {
+    if (invite.key) {
+        // The key rode in the fragment, so nothing has to be requested from a
+        // peer and no approval is involved.
+        try {
+            const key = await WayseraCrypto.importJourneyKey(invite.key);
+            const stored = (await WayseraStore.getJourney(invite.code)) || {
+                code: invite.code,
+                createdAt: Date.now()
+            };
+            stored.key = key;
+            await WayseraStore.putJourney(stored);
+        } catch (error) {
+            showError('joinResult', 'That invite link looks damaged. Ask for a new one.');
+        }
+    }
+
+    document.getElementById('roomCode').value = invite.code;
+    prefillName();
+
+    const name = recallName();
+    if (name) {
+        startJourney(invite.code, name);
+    } else {
+        document.getElementById('joinName').focus();
+    }
+}
+
+function prefillName() {
+    const field = document.getElementById('joinName');
+    if (field && !field.value) field.value = recallName();
+}
+
+// ============= GLOBAL HANDLERS FOR MARKUP =============
+
+window.createJourney = createJourney;
+window.joinJourney = joinJourney;
+window.shareInvite = shareInvite;
+window.shareCurrentInvite = shareCurrentInvite;
+window.copyJourneyCode = copyJourneyCode;
+window.leaveJourney = leaveJourney;
 window.toggleDirections = toggleDirections;
-window.copyRoomCode = copyRoomCode;
-window.copyInviteLink = copyInviteLink;
-window.leaveRoom = leaveRoom;
 window.toggleBottomSheet = toggleBottomSheet;
 window.startNavigation = startNavigation;
 window.stopNavigation = stopNavigation;
 
-console.log('✅ Waysera navigation loaded');
-console.log('🧭 Navigation functions available:', typeof window.startNavigation, typeof window.stopNavigation);
+// ============= LOCATION PERMISSION =============
 
-// ============= LOCATION PERMISSION HELPERS =============
-
-async function checkLocationPermissionStatus() {
-    // For iOS/Safari, we can't reliably check permissions
-    // Instead, we'll just try to get location and handle errors
-    
-    // Wait a bit, then check if location was acquired
+function checkLocationPermissionStatus() {
     setTimeout(() => {
-        if (!lastKnownLocation && !demoMode) {
-            console.log('📍 Location not acquired yet - showing banner');
-            showLocationBanner();
-        }
-    }, 5000); // Give 5 seconds for location to be acquired
+        if (!lastKnownLocation && !demoMode) showLocationBanner();
+    }, 5000);
 }
 
 function showLocationBanner() {
     const banner = document.getElementById('locationBanner');
-    if (banner) {
-        banner.style.display = 'block';
-    }
+    if (banner) banner.style.display = 'block';
 }
 
 function dismissLocationBanner() {
     const banner = document.getElementById('locationBanner');
-    if (banner) {
-        banner.style.display = 'none';
-    }
+    if (banner) banner.style.display = 'none';
+    if (!demoMode) startDemoMode();
 }
 
 function requestLocationPermission() {
     dismissLocationBanner();
-    
-    console.log('📍 Manually requesting location permission...');
-    
-    // Force a fresh location request with high priority
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                console.log('✅ Location permission granted!');
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                
-                // Stop demo mode if it was running
-                if (demoMode && locationInterval) {
-                    clearInterval(locationInterval);
-                    demoMode = false;
-                }
-                
-                sendLocationUpdate(lat, lng, position.coords.heading, position.coords.speed);
-                
-                showLocationAlert('✅ Location enabled! Your real position is now shown.');
-                
-                // Start continuous tracking
-                if (!locationInterval) {
-                    startLocationTracking();
-                }
-            },
-            (error) => {
-                console.warn('⚠️ Manual permission request failed:', error.message, 'Code:', error.code);
-                
-                let message = '';
-                if (error.code === 1) {
-                    // Permission denied
-                    message = '❌ Location permission denied.\n\nTo fix:\n1. Go to Chrome Settings\n2. Site Settings → Location\n3. Allow for this site\n\nUsing demo mode for now.';
-                } else if (error.code === 2) {
-                    // Position unavailable
-                    message = '⚠️ GPS unavailable.\n\nTry:\n- Moving outside\n- Near a window\n- Wait longer\n\nUsing demo mode.';
-                } else if (error.code === 3) {
-                    // Timeout
-                    message = '⏱️ GPS timeout.\n\nTry again or use demo mode.';
-                }
-                
-                showLocationAlert(message);
-                
-                if (!demoMode) {
-                    startDemoMode();
-                }
-            },
-            { 
-                enableHighAccuracy: true, 
-                timeout: 15000,  // 15 seconds for manual request
-                maximumAge: 0 
-            }
-        );
-    } else {
-        showLocationAlert('❌ Geolocation not supported on this device.');
+
+    if (!navigator.geolocation) {
+        showLocationAlert('This device cannot share location.');
         startDemoMode();
+        return;
     }
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            stopLocationTracking();
+            publishPosition(position.coords);
+            showLocationAlert('Location is on. Your group can see where you are.');
+            startLocationTracking();
+        },
+        handleLocationError,
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
 }
 
 window.requestLocationPermission = requestLocationPermission;
 window.dismissLocationBanner = dismissLocationBanner;
+
+// Tell peers we are going rather than making them wait for the roster timeout.
+window.addEventListener('pagehide', () => {
+    if (session) session.close();
+});
