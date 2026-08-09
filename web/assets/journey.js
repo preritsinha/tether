@@ -188,11 +188,12 @@ const WayseraJourney = (() => {
             return this.rawSend({ hs: message });
         }
 
-        announce() {
+        announce(reply = false) {
             return this.sendSealed({
                 type: 'hello',
                 memberId: this.memberId,
                 name: this.name,
+                reply,
                 ts: Date.now()
             });
         }
@@ -285,9 +286,15 @@ const WayseraJourney = (() => {
             switch (message.type) {
                 case 'hello':
                     this.touchMember(message.memberId, { name: message.name });
-                    // Bring the newcomer up to speed on where we are all going.
-                    await this.shareJourneyConfig();
-                    this.emit('joined', message);
+                    if (!message.reply) {
+                        // Bring the newcomer up to speed: the destination, and
+                        // who we are. Without the second part they would only
+                        // ever learn our name if we happened to have no
+                        // position to send, since position frames carry none.
+                        await this.shareJourneyConfig();
+                        await this.announce(true);
+                        this.emit('joined', message);
+                    }
                     break;
 
                 case 'position':

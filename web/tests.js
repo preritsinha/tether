@@ -767,6 +767,112 @@
         assertEqual(host.roster().length, 0, 'a long-silent member should be dropped');
     });
 
+    test('joining mid-journey learns the names already present', async () => {
+        // Regression: position frames carry no name, so someone who joined
+        // after everyone else would show as an unnamed row forever.
+        const key = await C().generateJourneyKey();
+        const host = await makeSession({ key, name: 'Alex' });
+        const guest = await makeSession({ key, name: 'Riya' });
+        const settle = connectPair(host, guest);
+
+        await guest.announce();
+        await settle();
+
+        const seen = guest.roster().find((m) => m.memberId === host.memberId);
+        assert(seen, 'the host should be on the roster');
+        assertEqual(seen.name, 'Alex', 'and the host should have a name');
+    });
+
+    test('introductions do not echo back and forth', async () => {
+        const key = await C().generateJourneyKey();
+        const host = await makeSession({ key, name: 'Alex' });
+        const guest = await makeSession({ key, name: 'Riya' });
+
+        let frames = 0;
+        const inflight = [];
+        host.rawSend = (frame) => {
+            frames += 1;
+            inflight.push(guest.handleFrame(JSON.stringify(frame)));
+            return true;
+        };
+        guest.rawSend = (frame) => {
+            frames += 1;
+            inflight.push(host.handleFrame(JSON.stringify(frame)));
+            return true;
+        };
+
+        await guest.announce();
+        for (let pass = 0; pass < 20 && inflight.length; pass += 1) {
+            await Promise.all(inflight.splice(0));
+        }
+
+        // hello out, then a single reply back. A reply that triggered another
+        // reply would run away here instead of settling.
+        assert(frames <= 4, `introductions should settle quickly, saw ${frames} frames`);
+    });
+
+    test('a quick message reaches peers carrying our own preset text', async () => {
+        const key = await C().generateJourneyKey();
+        const host = await makeSession({ key, name: 'Host' });
+        const peer = await makeSession({ key, name: 'Peer' });
+        const settle = connectPair(host, peer);
+
+        let received = null;
+        host.on('quick_message', (message) => { received = message; });
+
+        await peer.sendQuickMessage('need-fuel');
+        await settle();
+
+        assert(received !== null, 'the message should arrive');
+        assertEqual(received.presetId, 'need-fuel');
+        assertEqual(received.text, 'Need fuel');
+        assertEqual(received.memberId, peer.memberId);
+    });
+
+    test('an unknown preset never reaches a handler', async () => {
+        const key = await C().generateJourneyKey();
+        const host = await makeSession({ key, name: 'Host' });
+        const peer = await makeSession({ key, name: 'Peer' });
+        const settle = connectPair(host, peer);
+
+        let received = null;
+        host.on('quick_message', (message) => { received = message; });
+
+        // Sealed with the right key, so it decrypts — validation is the only
+        // thing standing between this and the UI.
+        await peer.sendSealed({
+            type: 'quick_message',
+            memberId: peer.memberId,
+            presetId: '<img src=x onerror=alert(1)>',
+            text: 'anything at all',
+            ts: Date.now()
+        });
+        await settle();
+
+        assertNull(received, 'an unlisted preset must be discarded');
+    });
+
+    test('a peer cannot dictate the text shown for a preset', async () => {
+        const key = await C().generateJourneyKey();
+        const host = await makeSession({ key, name: 'Host' });
+        const peer = await makeSession({ key, name: 'Peer' });
+        const settle = connectPair(host, peer);
+
+        let received = null;
+        host.on('quick_message', (message) => { received = message; });
+
+        await peer.sendSealed({
+            type: 'quick_message',
+            memberId: peer.memberId,
+            presetId: 'need-fuel',
+            text: '<img src=x onerror=alert(1)>',
+            ts: Date.now()
+        });
+        await settle();
+
+        assertEqual(received.text, 'Need fuel', 'text comes from our table');
+    });
+
     test('the roster puts you first', async () => {
         const key = await C().generateJourneyKey();
         const host = await makeSession({ key, name: 'Zara' });

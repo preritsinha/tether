@@ -214,6 +214,7 @@ async function startJourney(code, name) {
     );
 
     WayseraStore.setActiveJourney(code);
+    renderQuickMessages();
 
     if (currentRoom.destination) initializeMap();
     await session.connect();
@@ -287,7 +288,8 @@ function wireSession(activeSession) {
         };
         stored.key = key;
         await WayseraStore.putJourney(stored);
-        showLocationAlert('You are in. Waiting for journey details…');
+        setQuickMessagesEnabled(true);
+        showToast('You are in', 'Waiting for journey details…');
     });
 
     activeSession.on('awaiting_key', () => {
@@ -298,6 +300,27 @@ function wireSession(activeSession) {
     });
 
     activeSession.on('key_request', (request) => showJoinRequest(request));
+
+    activeSession.on('quick_message', (message) => {
+        const member = currentRoom.members[message.memberId];
+        // message.text comes from our own frozen preset table, never the sender.
+        showToast(member ? member.name : 'Someone', message.text, 'toast-message');
+        recordEvent('quick_message', {
+            memberId: message.memberId,
+            presetId: message.presetId,
+            text: message.text
+        });
+    });
+
+    activeSession.on('joined', (message) => {
+        showToast(`${message.name} joined`, '', 'toast-message');
+        recordEvent('joined', { memberId: message.memberId, name: message.name });
+    });
+
+    activeSession.on('left', (message) => {
+        const member = currentRoom.members[message.memberId];
+        recordEvent('left', { memberId: message.memberId, name: member ? member.name : null });
+    });
 
     activeSession.on('refused', ({ reason }) => {
         alert(
@@ -729,33 +752,91 @@ function handleLocationError(error) {
     if (!demoMode) startDemoMode();
 }
 
-function showLocationAlert(message) {
-    // Show a non-intrusive notification
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(255, 152, 0, 0.95);
-        color: white;
-        padding: 16px 24px;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        font-size: 14px;
-        z-index: 10001;
-        max-width: 90%;
-        text-align: center;
-        animation: slideIn 0.3s ease-out;
-    `;
-    notification.textContent = message.split('\n')[0]; // Show first line only
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease-out';
-        setTimeout(() => notification.remove(), 300);
-    }, 5000);
+// ---------------------------------------------------------------- toasts
+
+function toastStack() {
+    let stack = document.getElementById('toastStack');
+    if (!stack) {
+        stack = document.createElement('div');
+        stack.id = 'toastStack';
+        stack.className = 'toast-stack';
+        // Announced politely: a quick message should be heard by a screen
+        // reader without stealing focus from someone who is driving.
+        stack.setAttribute('role', 'status');
+        stack.setAttribute('aria-live', 'polite');
+        document.body.appendChild(stack);
+    }
+    return stack;
 }
+
+function showToast(title, body, variant = '') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${variant}`.trim();
+
+    const titleLine = document.createElement('div');
+    titleLine.className = 'toast-title';
+    // textContent: titles carry peer-supplied display names.
+    titleLine.textContent = title;
+    toast.appendChild(titleLine);
+
+    if (body) {
+        const bodyLine = document.createElement('div');
+        bodyLine.className = 'toast-body';
+        bodyLine.textContent = body;
+        toast.appendChild(bodyLine);
+    }
+
+    toastStack().appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+}
+
+function showLocationAlert(message) {
+    showToast(message, '', 'toast-notice');
+}
+
+// -------------------------------------------------------- quick messages
+
+function renderQuickMessages() {
+    const host = document.getElementById('quickMessages');
+    if (!host) return;
+
+    host.replaceChildren();
+    for (const [presetId, label] of Object.entries(WayseraValidate.QUICK_MESSAGES)) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'quick-message';
+        button.textContent = label;
+        button.onclick = () => sendQuickMessage(presetId);
+        host.appendChild(button);
+    }
+    setQuickMessagesEnabled(Boolean(session && session.key));
+}
+
+function setQuickMessagesEnabled(enabled) {
+    const host = document.getElementById('quickMessages');
+    if (!host) return;
+    for (const button of host.children) button.disabled = !enabled;
+}
+
+async function sendQuickMessage(presetId) {
+    if (!session || !session.key) return;
+
+    await session.sendQuickMessage(presetId);
+
+    // The relay never echoes to the sender, so our own message is shown and
+    // recorded locally rather than waiting for it to come back.
+    const text = WayseraValidate.QUICK_MESSAGES[presetId];
+    showToast('You', text, 'toast-message');
+    recordEvent('quick_message', { memberId: currentMemberId, presetId, text });
+}
+
+function recordEvent(kind, data) {
+    if (!currentRoom) return;
+    // Fire and forget: a failed local write must never interrupt a journey.
+    WayseraStore.appendEvent(currentRoom.room_id, { ts: Date.now(), kind, data })
+        .catch((error) => console.warn('waysera: could not record event', error));
+}
+
 
 function startDemoMode() {
     if (demoMode) return;

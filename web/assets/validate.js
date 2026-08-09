@@ -150,6 +150,10 @@ const WayseraValidate = (() => {
             type: 'hello',
             memberId: id,
             name,
+            // Marks a hello sent *in answer to* someone else's. Replies are
+            // never answered in turn, which is what stops a join from starting
+            // an endless round of introductions.
+            reply: message.reply === true,
             ts: timestamp(message.ts) ?? Date.now()
         };
     }
