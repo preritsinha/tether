@@ -215,6 +215,7 @@ async function startJourney(code, name) {
 
     WayseraStore.setActiveJourney(code);
     renderQuickMessages();
+    startRecording();
 
     if (currentRoom.destination) initializeMap();
     await session.connect();
@@ -257,6 +258,10 @@ function wireSession(activeSession) {
         renderGroup(roster);
 
         if (showDirections) drawAllRoutes();
+    });
+
+    activeSession.on('position', (message) => {
+        recordPosition(message.memberId, message);
     });
 
     activeSession.on('journey_config', async (message) => {
@@ -725,6 +730,7 @@ function publishPosition(coords) {
 
     if (session) session.sendPosition(position);
     if (map) updateUserLocationMarker(lastKnownLocation, 'live');
+    recordPosition(currentMemberId, { ...position, ts: Date.now() });
 
     if (first) updateNavigationButtonState();
     if (navigationActive) updateNavigationProgressThrottled();
@@ -835,6 +841,68 @@ function recordEvent(kind, data) {
     // Fire and forget: a failed local write must never interrupt a journey.
     WayseraStore.appendEvent(currentRoom.room_id, { ts: Date.now(), kind, data })
         .catch((error) => console.warn('waysera: could not record event', error));
+}
+
+// ------------------------------------------------------------- recording
+
+// Positions arrive faster than a replay needs, and writing each one straight
+// through would put an IndexedDB transaction on the main thread next to map
+// rendering. Points are thinned per person, buffered, and flushed in batches.
+const RECORD_MIN_GAP_MS = 2500;
+const RECORD_FLUSH_MS = 5000;
+
+let pointBuffer = [];
+let lastRecordedAt = new Map();
+let recordFlushTimer = null;
+
+function startRecording() {
+    if (recordFlushTimer) clearInterval(recordFlushTimer);
+    pointBuffer = [];
+    lastRecordedAt = new Map();
+    recordFlushTimer = setInterval(flushPoints, RECORD_FLUSH_MS);
+}
+
+function stopRecording() {
+    if (recordFlushTimer) {
+        clearInterval(recordFlushTimer);
+        recordFlushTimer = null;
+    }
+    flushPoints();
+}
+
+function recordPosition(memberId, point) {
+    if (!currentRoom) return;
+
+    const previous = lastRecordedAt.get(memberId) || 0;
+    if (point.ts - previous < RECORD_MIN_GAP_MS) return;
+    lastRecordedAt.set(memberId, point.ts);
+
+    pointBuffer.push({
+        memberId,
+        ts: point.ts,
+        lat: point.lat,
+        lng: point.lng,
+        heading: point.heading ?? null,
+        speed: point.speed ?? null
+    });
+}
+
+async function flushPoints() {
+    if (!currentRoom || pointBuffer.length === 0) return;
+
+    const batch = pointBuffer.splice(0);
+    const code = currentRoom.room_id;
+
+    try {
+        await WayseraStore.appendPoints(code, batch);
+        // Prune the people who just gained points, so a long journey loses
+        // resolution evenly rather than growing without bound.
+        for (const memberId of new Set(batch.map((point) => point.memberId))) {
+            await WayseraStore.pruneMemberPoints(code, memberId);
+        }
+    } catch (error) {
+        console.warn('waysera: could not record positions', error);
+    }
 }
 
 
@@ -1560,6 +1628,7 @@ function leaveJourney() {
     if (navigationActive) stopNavigation();
     clearAllRoutes();
     stopLocationTracking();
+    stopRecording();
 
     if (session) {
         session.close();
@@ -1633,6 +1702,7 @@ window.addEventListener('load', async () => {
     }
 
     prefillName();
+    renderPastJourneys();
 });
 
 async function enterFromInvite(invite) {
@@ -1666,6 +1736,81 @@ async function enterFromInvite(invite) {
 function prefillName() {
     const field = document.getElementById('joinName');
     if (field && !field.value) field.value = recallName();
+}
+
+// ============= PAST JOURNEYS =============
+
+async function renderPastJourneys() {
+    const section = document.getElementById('pastJourneysSection');
+    const host = document.getElementById('pastJourneys');
+    if (!section || !host) return;
+
+    const journeys = (await WayseraStore.listJourneys())
+        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    if (journeys.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+    host.replaceChildren();
+
+    for (const journey of journeys) {
+        host.appendChild(await renderJourneyListItem(journey));
+    }
+}
+
+async function renderJourneyListItem(journey) {
+    const row = document.createElement('div');
+    row.className = 'journey-list-item';
+
+    const main = document.createElement('div');
+    main.className = 'journey-list-main';
+
+    const name = document.createElement('div');
+    name.className = 'journey-list-name';
+    // textContent: a destination name can arrive from a peer.
+    name.textContent = journey.destination ? journey.destination.name : journey.code;
+
+    const meta = document.createElement('div');
+    meta.className = 'journey-list-meta';
+    const pointCount = (await WayseraStore.getPoints(journey.code)).length;
+    meta.textContent = pointCount
+        ? `${journey.code} · ${pointCount} recorded positions`
+        : `${journey.code} · nothing recorded`;
+
+    main.append(name, meta);
+
+    const actions = document.createElement('div');
+    actions.className = 'journey-list-actions';
+
+    if (pointCount > 0) {
+        const replay = document.createElement('a');
+        replay.className = 'btn btn-secondary';
+        replay.href = `replay.html?j=${encodeURIComponent(journey.code)}`;
+        replay.textContent = 'Replay';
+        actions.appendChild(replay);
+    }
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'btn btn-danger';
+    remove.textContent = 'Delete';
+    remove.onclick = async () => {
+        // Deleting cascades to the track and the event log — this is the only
+        // copy, so say so plainly rather than deleting quietly.
+        const label = journey.destination ? journey.destination.name : journey.code;
+        if (!confirm(`Delete "${label}" and everything recorded during it? This cannot be undone.`)) {
+            return;
+        }
+        await WayseraStore.deleteJourney(journey.code);
+        renderPastJourneys();
+    };
+    actions.appendChild(remove);
+
+    row.append(main, actions);
+    return row;
 }
 
 // ============= GLOBAL HANDLERS FOR MARKUP =============

@@ -1761,3 +1761,199 @@ a,
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ============= Replay ============= */
+
+.replay-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-4);
+}
+
+.replay-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.replay-back {
+  color: var(--waysera-primary);
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.replay-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+.replay-subtitle {
+  font-size: 13.5px;
+  color: var(--text-tertiary);
+  margin: 2px 0 0;
+}
+
+.replay-error {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--status-warning);
+  color: var(--text-secondary);
+}
+
+.replay-map {
+  height: 46vh;
+  min-height: 280px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+
+.replay-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.replay-controls .btn {
+  min-width: 92px;
+}
+
+.replay-scrubber {
+  flex: 1;
+  accent-color: var(--waysera-primary);
+}
+
+.replay-clock {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.replay-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-3);
+}
+
+.replay-speeds {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.replay-speed {
+  padding: 7px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.replay-speed.is-active {
+  background: var(--waysera-primary);
+  border-color: var(--waysera-primary);
+  color: #FFFFFF;
+}
+
+.replay-exports {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.replay-timeline {
+  margin-top: var(--space-6);
+}
+
+.replay-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+
+.replay-event {
+  display: flex;
+  gap: var(--space-3);
+  width: 100%;
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.replay-event:active {
+  background: var(--bg-tertiary);
+}
+
+.replay-event-time {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  color: var(--waysera-primary);
+  min-width: 46px;
+}
+
+.replay-empty {
+  color: var(--text-tertiary);
+  font-size: 14px;
+  padding: var(--space-3);
+}
+
+/* ============= Past journeys ============= */
+
+.journey-list {
+  margin-top: var(--space-4);
+}
+
+.journey-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.journey-list-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.journey-list-name {
+  font-weight: 600;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.journey-list-meta {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+
+.journey-list-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.journey-list-actions .btn {
+  padding: 7px 14px;
+  font-size: 13.5px;
+}

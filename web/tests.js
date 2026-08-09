@@ -889,6 +889,134 @@
     });
 
     // =====================================================================
+    // export
+    // =====================================================================
+
+    const X = () => window.WayseraExport;
+
+    const SAMPLE_JOURNEY = {
+        code: 'ABC234',
+        destination: { name: 'Gateway of India', lat: 18.922, lng: 72.834 },
+        createdAt: 1700000000000,
+        expiresAt: 1700010000000
+    };
+
+    const SAMPLE_POINTS = [
+        { memberId: 'm_aaaaaaaaaaaa', ts: 1700000000000, lat: 19.0, lng: 72.8, heading: 90, speed: 12 },
+        { memberId: 'm_bbbbbbbbbbbb', ts: 1700000001000, lat: 19.1, lng: 72.9, heading: null, speed: null },
+        { memberId: 'm_aaaaaaaaaaaa', ts: 1700000002000, lat: 19.2, lng: 72.7, heading: 180, speed: 9 }
+    ];
+
+    const SAMPLE_EVENTS = [
+        { ts: 1700000000000, kind: 'joined', data: { memberId: 'm_aaaaaaaaaaaa', name: 'Alex' } },
+        { ts: 1700000001500, kind: 'quick_message', data: { memberId: 'm_aaaaaaaaaaaa', presetId: 'need-fuel', text: 'Need fuel' } }
+    ];
+
+    test('points group by person in order', () => {
+        const tracks = X().groupByMember(SAMPLE_POINTS);
+        assertEqual(tracks.size, 2);
+        assertEqual(tracks.get('m_aaaaaaaaaaaa').length, 2);
+        assertEqual(tracks.get('m_aaaaaaaaaaaa')[0].lat, 19.0);
+        assertEqual(tracks.get('m_aaaaaaaaaaaa')[1].lat, 19.2);
+    });
+
+    test('names are recovered from the event log', () => {
+        const names = X().namesFromEvents(SAMPLE_EVENTS);
+        assertEqual(names.get('m_aaaaaaaaaaaa'), 'Alex');
+        assertEqual(names.get('m_bbbbbbbbbbbb'), undefined, 'unknown people stay unnamed');
+    });
+
+    test('JSON export round-trips the track', () => {
+        const parsed = JSON.parse(X().toJSON(SAMPLE_JOURNEY, SAMPLE_POINTS, SAMPLE_EVENTS));
+        assertEqual(parsed.format, 'waysera.journey');
+        assertEqual(parsed.journey.code, 'ABC234');
+        assertEqual(parsed.journey.destination.name, 'Gateway of India');
+        assertEqual(parsed.points.length, 3);
+        assertEqual(parsed.points[0].lat, 19.0);
+        assertEqual(parsed.events.length, 2);
+        assertEqual(parsed.people[0].name, 'Alex');
+    });
+
+    test('JSON export never contains the journey key', () => {
+        const withKey = { ...SAMPLE_JOURNEY, key: 'super-secret-key-material' };
+        const text = X().toJSON(withKey, SAMPLE_POINTS, SAMPLE_EVENTS);
+        assert(!text.includes('super-secret-key-material'), 'the key must not be exported');
+        assert(!text.includes('"key"'), 'no key field at all');
+        // Exporting it would hand over live access, not just history.
+        assertEqual(JSON.parse(text).journey.key, undefined);
+    });
+
+    test('GPX has one track per person, named', () => {
+        const gpx = X().toGPX(SAMPLE_JOURNEY, SAMPLE_POINTS, SAMPLE_EVENTS);
+        assertEqual((gpx.match(/<trk>/g) || []).length, 2);
+        assert(gpx.includes('<name>Alex</name>'), 'known person named');
+        assert(gpx.includes('<name>Someone</name>'), 'unknown person gets a neutral label');
+        assertEqual((gpx.match(/<trkpt /g) || []).length, 3);
+        assert(gpx.includes('lat="19"') || gpx.includes('lat="19.0"'), 'coordinates present');
+    });
+
+    test('GPX parses as XML', () => {
+        const gpx = X().toGPX(SAMPLE_JOURNEY, SAMPLE_POINTS, SAMPLE_EVENTS);
+        const doc = new DOMParser().parseFromString(gpx, 'application/xml');
+        assertEqual(doc.querySelector('parsererror'), null, 'must be well-formed XML');
+        assertEqual(doc.documentElement.nodeName, 'gpx');
+    });
+
+    test('a hostile name cannot break out of the GPX', () => {
+        const events = [{
+            ts: 1,
+            kind: 'joined',
+            data: { memberId: 'm_aaaaaaaaaaaa', name: '</name></trk><script>alert(1)</script>' }
+        }];
+        const gpx = X().toGPX(SAMPLE_JOURNEY, SAMPLE_POINTS, events);
+
+        assert(!gpx.includes('<script>'), 'no raw markup may survive');
+        const doc = new DOMParser().parseFromString(gpx, 'application/xml');
+        assertEqual(doc.querySelector('parsererror'), null, 'must still be well-formed');
+    });
+
+    test('an ampersand in a destination does not corrupt the GPX', () => {
+        const journey = { ...SAMPLE_JOURNEY, destination: { name: 'Bed & Breakfast', lat: 1, lng: 1 } };
+        const gpx = X().toGPX(journey, SAMPLE_POINTS, SAMPLE_EVENTS);
+        const doc = new DOMParser().parseFromString(gpx, 'application/xml');
+        assertEqual(doc.querySelector('parsererror'), null);
+        assert(gpx.includes('Bed &amp; Breakfast'));
+    });
+
+    // =====================================================================
+    // replay interpolation
+    // =====================================================================
+
+    const R = () => window.WayseraReplayInternals;
+
+    const TRACK = [
+        { ts: 1000, lat: 10, lng: 20 },
+        { ts: 2000, lat: 12, lng: 22 },
+        { ts: 4000, lat: 16, lng: 26 }
+    ];
+
+    test('replay interpolates between recorded points', () => {
+        const midway = R().positionAt(TRACK, 1500);
+        assertEqual(midway.lat, 11, 'halfway between 10 and 12');
+        assertEqual(midway.lng, 21);
+    });
+
+    test('replay holds at the last known point', () => {
+        const after = R().positionAt(TRACK, 99999);
+        assertEqual(after.lat, 16);
+    });
+
+    test('replay shows nobody before their first point', () => {
+        // People join mid-journey, so a track does not span the whole timeline —
+        // returning the first point here would park them at the start instead.
+        assertNull(R().positionAt(TRACK, 500));
+    });
+
+    test('replay handles an exact point timestamp', () => {
+        assertEqual(R().positionAt(TRACK, 2000).lat, 12);
+    });
+
+    // =====================================================================
     // runner
     // =====================================================================
 

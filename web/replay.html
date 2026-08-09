@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#4F46E5">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B1120">
+    <title>Waysera — Journey replay</title>
+    <meta name="description" content="Replay a finished journey from your own device.">
+    <link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="assets/app-mobile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+</head>
+<body class="replay-page">
+    <header class="replay-header">
+        <a class="replay-back" href="/">Back</a>
+        <div>
+            <h1 id="replayTitle" class="replay-title">Journey replay</h1>
+            <p id="replaySubtitle" class="replay-subtitle"></p>
+        </div>
+    </header>
+
+    <div id="replayError" class="replay-error" style="display: none;"></div>
+
+    <div id="replayBody">
+        <div id="replayMap" class="replay-map"></div>
+
+        <div class="replay-controls">
+            <button type="button" id="replayPlay" class="btn btn-primary">Play</button>
+            <input type="range" id="replayScrubber" class="replay-scrubber"
+                   aria-label="Journey timeline" value="0">
+            <span id="replayClock" class="replay-clock">0:00 / 0:00</span>
+        </div>
+
+        <div class="replay-toolbar">
+            <div id="replaySpeeds" class="replay-speeds" role="group" aria-label="Playback speed"></div>
+            <div class="replay-exports">
+                <button type="button" id="replayExportJson" class="btn btn-secondary">Export JSON</button>
+                <button type="button" id="replayExportGpx" class="btn btn-secondary">Export GPX</button>
+            </div>
+        </div>
+
+        <section class="replay-timeline">
+            <h2 class="replay-section-title">What happened</h2>
+            <div id="replayEvents"></div>
+        </section>
+    </div>
+
+    <script src="assets/crypto.js"></script>
+    <script src="assets/validate.js"></script>
+    <script src="assets/store.js"></script>
+    <script src="assets/export.js"></script>
+    <script src="assets/replay.js"></script>
+</body>
+</html>

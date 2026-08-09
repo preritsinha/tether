@@ -78,12 +78,15 @@ class Page:
                     raise RuntimeError(f"{method}: {event['error']}")
                 return event.get("result", {})
 
-    async def navigate(self, url):
+    async def navigate(self, url, ready="typeof window.startJourney === 'function'"):
+        """Navigate and wait for the page's own signal, not a fixed delay.
+
+        The readiness expression differs per page — the replay view never loads
+        index.js, so it has no startJourney to wait for.
+        """
         await self.call("Page.navigate", {"url": url})
-        # Wait for the app's own globals rather than a fixed delay.
         for _ in range(100):
-            ready = await self.evaluate("typeof window.startJourney === 'function'")
-            if ready:
+            if await self.evaluate(ready):
                 return
             await asyncio.sleep(0.1)
         raise RuntimeError(f"page never finished loading: {url}")
@@ -233,12 +236,19 @@ async def run() -> list[str]:
     )
 
     async def roster(page):
+        """Wait for the roster to settle, not merely to be populated.
+
+        A position can arrive before its sender's hello, so an entry legitimately
+        exists with no name for a moment — the UI shows 'Someone' until it
+        resolves. Waiting only on the count made this test race.
+        """
+        names = []
         for _ in range(60):
             names = await page.json_eval(
                 "Promise.resolve(JSON.stringify("
                 "session.roster().map(m => m.isSelf ? 'me:' + m.name : m.name)))"
             )
-            if len(names) >= 2:
+            if len(names) >= 2 and all(names):
                 return names
             await asyncio.sleep(0.25)
         return names
@@ -319,6 +329,57 @@ async def run() -> list[str]:
                 continue
             if set(frame) - {"iv", "ct"} and "hs" not in frame:
                 failures.append(f"frame carried unexpected fields: {sorted(frame)}")
+
+    # ---- recording and replay -------------------------------------------
+    # Each device records what it received, so both should independently hold a
+    # track of the other without anything having been uploaded.
+    for page in (host, guest):
+        await page.evaluate("flushPoints()", await_promise=True)
+
+    host_points = await host.evaluate(
+        f"WayseraStore.getPoints('{code}').then(p => p.length)", await_promise=True
+    )
+    guest_points = await guest.evaluate(
+        f"WayseraStore.getPoints('{code}').then(p => p.length)", await_promise=True
+    )
+    if not host_points:
+        failures.append("host recorded nothing")
+    if not guest_points:
+        failures.append("guest recorded nothing")
+
+    # The replay page must open that recording and render a usable timeline.
+    await host.navigate(
+        f"{ORIGIN}/replay.html?j={code}",
+        ready="Boolean(document.getElementById('replayScrubber'))",
+    )
+    replay = await host.json_eval("""
+        Promise.resolve().then(async () => {
+            for (let i = 0; i < 60; i += 1) {
+                const scrubber = document.getElementById('replayScrubber');
+                if (scrubber && Number(scrubber.max) > 0) break;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            const error = document.getElementById('replayError');
+            return JSON.stringify({
+                error: error && error.style.display !== 'none' ? error.textContent : null,
+                title: document.getElementById('replayTitle').textContent,
+                span: Number(document.getElementById('replayScrubber').max),
+                events: document.getElementById('replayEvents').children.length,
+                speeds: document.getElementById('replaySpeeds').children.length
+            });
+        })
+    """)
+
+    if replay.get("error"):
+        failures.append(f"replay page errored: {replay['error']}")
+    if replay.get("title") != "Gateway of India":
+        failures.append(f"replay title wrong: {replay.get('title')!r}")
+    if not replay.get("span"):
+        failures.append("replay timeline has no span")
+    if replay.get("speeds") != 4:
+        failures.append(f"expected 4 playback speeds, got {replay.get('speeds')}")
+    if not replay.get("events"):
+        failures.append("replay timeline shows no events")
 
     await host.close()
     await guest.close()
