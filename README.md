@@ -191,7 +191,12 @@ FastAPI and WebSockets on the relay. Vanilla JavaScript on the client, with no f
 
 ## License
 
-MIT.
+MIT. See [LICENSE](LICENSE).
+
+Waysera depends on Leaflet (BSD-2), Leaflet Routing Machine (ISC), FastAPI (MIT),
+Starlette, Uvicorn and websockets (BSD-3), all of which permit this. Map data,
+routing and geocoding come from OpenStreetMap under ODbL, which requires the
+attribution shown on the map.
 
 ---
 
