@@ -215,6 +215,7 @@ async function startJourney(code, name) {
 
     WayseraStore.setActiveJourney(code);
     renderQuickMessages();
+    announcedArrivals.clear();
     startRecording();
 
     if (currentRoom.destination) initializeMap();
@@ -262,6 +263,7 @@ function wireSession(activeSession) {
 
     activeSession.on('position', (message) => {
         recordPosition(message.memberId, message);
+        checkPeerArrival(message);
     });
 
     activeSession.on('journey_config', async (message) => {
@@ -527,7 +529,9 @@ function updateMemberMarker(memberId, memberName, location, status) {
 
 function updateUserLocationMarker(location, status) {
     try {
-        const iconColor = status === 'live' ? '#1A73E8' : status === 'stale' ? '#FF9500' : '#8E8E93';
+        // Your own marker uses the brand indigo when live; stale and offline
+        // stay semantic rather than becoming brand colours.
+        const iconColor = status === 'live' ? '#4F46E5' : status === 'stale' ? '#FF9500' : '#64748B';
         
         // Create custom SVG icon with heading indicator
         const svgIcon = `
@@ -843,6 +847,38 @@ function recordEvent(kind, data) {
         .catch((error) => console.warn('waysera: could not record event', error));
 }
 
+// -------------------------------------------------------- peer arrivals
+
+const ARRIVAL_RADIUS_KM = 0.05;
+const announcedArrivals = new Set();
+
+/**
+ * Announce someone else reaching the destination.
+ *
+ * Announced once per person per journey — positions keep arriving after
+ * someone parks, and repeating it every three seconds would be maddening.
+ */
+function checkPeerArrival(message) {
+    if (!currentRoom || !currentRoom.destination) return;
+    if (announcedArrivals.has(message.memberId)) return;
+
+    const distance = haversineDistance(
+        message.lat, message.lng,
+        currentRoom.destination.lat, currentRoom.destination.lng
+    );
+    if (distance > ARRIVAL_RADIUS_KM) return;
+
+    announcedArrivals.add(message.memberId);
+
+    const member = currentRoom.members[message.memberId];
+    const name = member && member.name ? member.name : 'Someone';
+    showToast(`${name} has arrived.`, '', 'toast-message');
+    recordEvent('arrived', { memberId: message.memberId, name });
+
+    const waiting = Object.keys(currentRoom.members).length - announcedArrivals.size;
+    if (waiting <= 0) showToast('Everyone has arrived.', '', 'toast-message');
+}
+
 // ------------------------------------------------------------- recording
 
 // Positions arrive faster than a replay needs, and writing each one straight
@@ -1089,6 +1125,87 @@ function clearAllRoutes() {
 
 // ============= NAVIGATION FEATURE =============
 
+// ============= VOICE GUIDANCE AND WAKE LOCK =============
+
+const VOICE_KEY = 'waysera.voice';
+let lastSpokenInstruction = '';
+let wakeLock = null;
+
+function voiceEnabled() {
+    try {
+        return localStorage.getItem(VOICE_KEY) !== 'off';
+    } catch (error) {
+        return true;
+    }
+}
+
+function setVoiceEnabled(enabled) {
+    try {
+        localStorage.setItem(VOICE_KEY, enabled ? 'on' : 'off');
+    } catch (error) {
+        // Private mode — the setting simply will not persist.
+    }
+    if (!enabled && window.speechSynthesis) window.speechSynthesis.cancel();
+    updateVoiceButton();
+}
+
+function toggleVoice() {
+    setVoiceEnabled(!voiceEnabled());
+}
+
+function updateVoiceButton() {
+    const button = document.getElementById('voiceToggle');
+    if (!button) return;
+    const on = voiceEnabled();
+    button.textContent = on ? 'Voice on' : 'Voice off';
+    button.setAttribute('aria-pressed', String(on));
+}
+
+/**
+ * Speak a navigation instruction.
+ *
+ * Only ever called when the instruction text actually changes — announcing on
+ * every position tick would talk over itself several times a second.
+ */
+function speak(text) {
+    if (!text || !voiceEnabled()) return;
+    if (!('speechSynthesis' in window)) return;
+    if (text === lastSpokenInstruction) return;
+
+    lastSpokenInstruction = text;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    // Replace anything queued rather than building a backlog of stale turns.
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+}
+
+async function acquireWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (error) {
+        // Denied, or the tab is not visible. Navigation still works.
+    }
+}
+
+function releaseWakeLock() {
+    if (wakeLock) {
+        wakeLock.release().catch(() => {});
+        wakeLock = null;
+    }
+}
+
+// A wake lock is dropped whenever the tab is hidden, so it has to be retaken
+// when the user comes back rather than assuming it survived.
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && navigationActive && !wakeLock) {
+        acquireWakeLock();
+    }
+});
+
 function startNavigation() {
     if (!currentRoom || !map) {
         alert('Cannot start navigation');
@@ -1103,7 +1220,10 @@ function startNavigation() {
     
     console.log('🧭 Starting FUTURISTIC navigation mode');
     navigationActive = true;
-    
+    lastSpokenInstruction = '';
+    acquireWakeLock();
+    updateVoiceButton();
+
     // Update UI - show full-screen navigation panel
     document.getElementById('startNavBtn').style.display = 'none';
     document.getElementById('stopNavBtn').style.display = 'inline-flex';
@@ -1132,8 +1252,10 @@ function startNavigation() {
 }
 
 function stopNavigation() {
-    console.log('🛑 Stopping navigation');
     navigationActive = false;
+    releaseWakeLock();
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    lastSpokenInstruction = '';
     
     // Update UI
     document.getElementById('startNavBtn').style.display = 'inline-flex';
@@ -1148,12 +1270,6 @@ function stopNavigation() {
             navPanel.style.display = 'none';
             navPanel.style.opacity = '1';
         }, 300);
-    }
-    
-    // Hide lane guidance
-    const laneGuidance = document.getElementById('laneGuidance');
-    if (laneGuidance) {
-        laneGuidance.style.display = 'none';
     }
     
     // Remove navigation route
@@ -1212,7 +1328,7 @@ function createNavigationRoute(fromLocation, toDestination) {
             show: false, // Hide default instruction panel
             lineOptions: {
                 styles: [{
-                    color: '#1A73E8',
+                    color: '#4F46E5',
                     opacity: 0.9,
                     weight: 6,
                     className: 'nav-route-line'
@@ -1259,7 +1375,7 @@ function createNavigationRoute(fromLocation, toDestination) {
                 [fromLocation.lat, fromLocation.lng],
                 [toDestination.lat, toDestination.lng]
             ], {
-                color: '#1A73E8',
+                color: '#4F46E5',
                 weight: 4,
                 opacity: 0.7,
                 dashArray: '10, 10'
@@ -1278,12 +1394,6 @@ function createNavigationRoute(fromLocation, toDestination) {
             document.getElementById('navDistance').textContent = `${distance.toFixed(1)} km`;
             document.getElementById('navETA').textContent = `~${estimatedTime} min`;
             document.getElementById('navSpeed').textContent = '-';
-            
-            // Hide lane guidance
-            const laneGuidance = document.getElementById('laneGuidance');
-            if (laneGuidance) {
-                laneGuidance.style.display = 'none';
-            }
             
             // Show notification
             showNavigationError('Routing service unavailable. Showing direct route instead.');
@@ -1358,12 +1468,13 @@ function updateNavigationUI(route) {
         
         document.getElementById('navInstruction').textContent = instructionText;
         document.getElementById('navInstructionDistance').textContent = instructionDistance;
+
+        // Distance is deliberately left out of the spoken line: it changes on
+        // every tick, and including it would make the guard below useless.
+        speak(instructionText);
         
         // Update direction arrow SVG based on instruction type
         updateDirectionArrow(instruction.type);
-        
-        // Update lane guidance if available
-        updateLaneGuidance(instruction);
     }
 }
 
@@ -1418,42 +1529,20 @@ function updateDirectionArrow(instructionType) {
     }
 }
 
-function updateLaneGuidance(instruction) {
-    // Parse lane information from instruction if available
-    // This is a simplified version - real implementation would parse OSRM lane data
-    const laneGuidance = document.getElementById('laneGuidance');
-    const laneArrows = document.getElementById('laneArrows');
-    
-    if (!laneGuidance || !laneArrows) return;
-    
-    // For demonstration, show lane guidance for turn instructions
-    const showLanes = ['Right', 'Left', 'SlightRight', 'SlightLeft', 'SharpRight', 'SharpLeft'].includes(instruction.type);
-    
-    if (showLanes) {
-        laneGuidance.style.display = 'block';
-        
-        // Generate lane arrows (simplified - in production, use actual lane data)
-        const numLanes = 3;
-        const activeLane = instruction.type.includes('Right') ? numLanes - 1 : 0;
-        
-        let lanesHTML = '';
-        for (let i = 0; i < numLanes; i++) {
-            const isActive = i === activeLane;
-            const arrowDirection = instruction.type.includes('Right') ? '↗' : 
-                                  instruction.type.includes('Left') ? '↖' : '↑';
-            lanesHTML += `
-                <div class="lane-arrow ${isActive ? 'active' : ''}">
-                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <text x="12" y="18" text-anchor="middle" font-size="20">${arrowDirection}</text>
-                    </svg>
-                </div>
-            `;
-        }
-        laneArrows.innerHTML = lanesHTML;
-    } else {
-        laneGuidance.style.display = 'none';
-    }
-}
+// Lane guidance was removed rather than repaired.
+//
+// The previous implementation hardcoded three lanes and guessed the active one
+// from the instruction text — invented data presented to someone who is
+// driving, which is worse than showing nothing. Real lane data does exist in
+// OSRM's response under step.intersections[].lanes, but leaflet-routing-machine
+// copies only ten fields off each step (type, distance, time, road, direction,
+// exit, index, mode, modifier, text) and discards the rest, so it never reaches
+// us. Reinstating a lane graphic means querying OSRM directly rather than
+// through the routing control.
+//
+// Genuine lane hints still reach the driver: the library folds OSRM's lane data
+// into the instruction text itself ("use the left lane") when the road has it.
+
 
 function updateNavigationProgressThrottled() {
     // Throttle route updates to avoid excessive recalculations (max once per 2 seconds)
@@ -1498,7 +1587,8 @@ function updateNavigationProgress() {
     );
     
     if (distanceToDestination < 0.05) { // Less than 50 meters
-        console.log('🏁 Arrived at destination!');
+        speak("You've arrived.");
+        recordEvent('arrived', { memberId: currentMemberId });
         showArrivalNotification();
         stopNavigation();
     } else if (navigationActive && map) {
@@ -1543,7 +1633,7 @@ function showArrivalNotification() {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: linear-gradient(135deg, #34A853 0%, #1A73E8 100%);
+        background: linear-gradient(135deg, #4F46E5 0%, #0EA5E9 55%, #14B8A6 100%);
         color: white;
         padding: 32px 48px;
         border-radius: 24px;
@@ -1559,9 +1649,9 @@ function showArrivalNotification() {
     `;
     notification.innerHTML = `
         <div style="font-size: 48px; margin-bottom: 12px;">🏁</div>
-        <div>You have arrived!</div>
+        <div>You&rsquo;ve arrived.</div>
         <div style="font-size: 16px; font-weight: 400; margin-top: 8px; opacity: 0.9;">
-            Welcome to your destination
+            Everyone can see you made it.
         </div>
     `;
     document.body.appendChild(notification);
@@ -1825,6 +1915,7 @@ window.toggleDirections = toggleDirections;
 window.toggleBottomSheet = toggleBottomSheet;
 window.startNavigation = startNavigation;
 window.stopNavigation = stopNavigation;
+window.toggleVoice = toggleVoice;
 
 // ============= LOCATION PERMISSION =============
 

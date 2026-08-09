@@ -118,6 +118,28 @@ PAGE_CHECKS = """
     report.storedDestination = stored && stored.destination
       ? stored.destination.name : null;
     report.storedKey = Boolean(stored && stored.key);
+
+    // Voice guidance. speechSynthesis is stubbed so the check works headlessly
+    // and so repeats can actually be counted.
+    const spoken = [];
+    Object.defineProperty(window, 'speechSynthesis', {
+      value: { speak: (u) => spoken.push(u.text), cancel: () => {} },
+      configurable: true
+    });
+    window.SpeechSynthesisUtterance = function (text) { this.text = text; };
+
+    setVoiceEnabled(true);
+    lastSpokenInstruction = '';
+    speak('Turn left onto Marine Drive');
+    speak('Turn left onto Marine Drive');   // repeat on the next position tick
+    speak('Turn right onto Peddar Road');
+    report.spoken = spoken.slice();
+
+    setVoiceEnabled(false);
+    speak('Should stay silent');
+    report.spokenWhileMuted = spoken.length - report.spoken.length;
+    report.mutePersisted = localStorage.getItem('waysera.voice');
+    setVoiceEnabled(true);
   } catch (error) {
     report.errors.push(String(error && error.stack ? error.stack : error));
   }
@@ -247,6 +269,14 @@ def main() -> int:
             )
         if not report.get("storedKey"):
             failures.append("journey key not persisted")
+
+        spoken = report.get("spoken")
+        if spoken != ["Turn left onto Marine Drive", "Turn right onto Peddar Road"]:
+            failures.append(f"voice guidance repeated or dropped instructions: {spoken}")
+        if report.get("spokenWhileMuted"):
+            failures.append("voice spoke while muted")
+        if report.get("mutePersisted") != "off":
+            failures.append(f"mute preference not persisted: {report.get('mutePersisted')!r}")
 
     if failures:
         for failure in failures:

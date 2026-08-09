@@ -285,11 +285,6 @@
                     </div>
                 </div>
                 
-                <!-- Lane Guidance -->
-                <div id="laneGuidance" class="lane-guidance" style="display: none;">
-                    <div id="laneArrows" class="lane-arrows"></div>
-                </div>
-                
                 <!-- Bottom Section: Stats -->
                 <div class="nav-stats-container">
                     <div class="nav-stat">
@@ -308,6 +303,9 @@
                     </div>
                 </div>
                 
+                <button type="button" id="voiceToggle" class="nav-voice-btn"
+                        onclick="toggleVoice()" aria-pressed="true">Voice on</button>
+
                 <!-- Exit Navigation Button -->
                 <button id="navExitBtn" class="nav-exit-btn" onclick="stopNavigation()">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
