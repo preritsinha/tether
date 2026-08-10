@@ -17,9 +17,8 @@ const WayseraSearch = (() => {
     const ENDPOINT = 'https://photon.komoot.io/api';
     const LIMIT = 8;
 
-    // Photon's default bias is gentle. A navigation app wants it stronger:
-    // nearby matters more here than it would for a general-purpose map search.
-    const BIAS_SCALE = 0.6;
+    // Strong location bias: for a navigation app nearby always beats famous-but-far.
+    const BIAS_SCALE = 0.9;
 
     const LAST_POSITION_KEY = 'waysera.lastPosition';
 
@@ -120,6 +119,35 @@ const WayseraSearch = (() => {
      * address context is left over, which is what tells two branches of the
      * same chain apart. Parts already used on the first line are not repeated.
      */
+    // POI types that should be ranked above administrative boundaries.
+    // A restaurant 500m away beats a city 5km away for navigation purposes.
+    const POI_TYPES = new Set([
+        'restaurant','cafe','fast_food','bar','pub','hotel','fuel','charging_station',
+        'hospital','clinic','pharmacy','school','college','university',
+        'supermarket','mall','parking','stadium','museum','place_of_worship',
+        'attraction','viewpoint','beach','aerodrome','station','bus_station',
+        'subway','halt','park'
+    ]);
+
+    /**
+     * Re-rank results so that:
+     *  1. Closer always beats farther (primary sort).
+     *  2. Named POIs get a 3 km distance bonus over admin boundaries.
+     *  3. Results without a name (raw address only) go last.
+     */
+    function rankResults(results) {
+        return [...results].sort((a, b) => {
+            const distA = a.distanceKm ?? 999;
+            const distB = b.distanceKm ?? 999;
+            const boostA = POI_TYPES.has(a.rawType) ? 3 : 0;
+            const boostB = POI_TYPES.has(b.rawType) ? 3 : 0;
+            // Named place over unnamed address
+            const namedA = a.primary && !/^\d/.test(a.primary) ? 0 : 2;
+            const namedB = b.primary && !/^\d/.test(b.primary) ? 0 : 2;
+            return (distA - boostA + namedA) - (distB - boostB + namedB);
+        });
+    }
+
     function formatResult(feature) {
         const properties = feature.properties || {};
         const [lon, lat] = (feature.geometry && feature.geometry.coordinates) || [];
@@ -160,6 +188,7 @@ const WayseraSearch = (() => {
             primary,
             secondary,
             category: categoryFor(properties),
+            rawType: properties.osm_value || properties.type || '',
             lat,
             lng: lon
         };
@@ -208,7 +237,7 @@ const WayseraSearch = (() => {
         const body = await response.json();
         const features = Array.isArray(body.features) ? body.features : [];
 
-        return features
+        const withDistance = features
             .map(formatResult)
             .filter((result) => Number.isFinite(result.lat) && Number.isFinite(result.lng))
             .map((result) => {
@@ -217,6 +246,34 @@ const WayseraSearch = (() => {
                     : null;
                 return { ...result, distanceKm: km, distance: distanceLabel(km) };
             });
+
+        // Re-rank: nearby POIs above distant admin areas
+        return options.near ? rankResults(withDistance) : withDistance;
+    }
+
+    /**
+     * Fetch a mixed set of nearby POIs when no query has been typed yet.
+     * Runs two parallel searches for different place types so the "Near you"
+     * section covers a useful range (food, transit, health, leisure).
+     */
+    async function searchNearby(near, signal) {
+        if (!near) return [];
+
+        const run = (q) => search(q, { near, signal }).catch(() => []);
+        const [a, b] = await Promise.all([
+            run('restaurant cafe hotel bar'),
+            run('station hospital park school pharmacy'),
+        ]);
+
+        const seen = new Set();
+        return [...a, ...b]
+            .filter(r => {
+                if (seen.has(r.primary)) return false;
+                seen.add(r.primary);
+                return true;
+            })
+            .sort((x, y) => (x.distanceKm ?? 999) - (y.distanceKm ?? 999))
+            .slice(0, 8);
     }
 
     return {
@@ -229,7 +286,9 @@ const WayseraSearch = (() => {
         formatResult,
         distanceLabel,
         buildUrl,
-        search
+        search,
+        searchNearby,
+        rankResults
     };
 })();
 

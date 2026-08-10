@@ -1,268 +1,411 @@
 /**
- * The destination field on the home page.
+ * Destination search — Google Maps-style full-screen overlay.
  *
- * Behaves the way a maps search box is expected to: results appear as you
- * type, biased toward wherever you are, navigable with the arrow keys, and
- * showing enough address to tell two similarly named places apart.
+ * Tapping the search field opens a full-screen panel with:
+ *   - a back arrow to dismiss
+ *   - recent searches shown immediately (localStorage)
+ *   - live results with category icon, place name, address, distance
  *
- * Every request carries an AbortSignal. Without that, a slow early request can
- * land after a fast later one and replace good results with stale ones, which
- * is what makes a search box feel like it is fighting you.
+ * All string content is set via textContent — never innerHTML.
  */
 
 (() => {
     'use strict';
 
-    const DEBOUNCE_MS = 250;
-    const MIN_QUERY = 2;
+    const DEBOUNCE_MS   = 200;
+    const MIN_QUERY     = 2;
+    const MAX_RECENT    = 5;
+    const RECENT_KEY    = 'waysera.recentSearches';
 
-    let input;
-    let list;
-    let chosenLine;
-    let nearButton;
+    const CATEGORY_ICONS = {
+        Airport: '✈️', Station: '🚉', 'Bus station': '🚌', Metro: '🚇',
+        Restaurant: '🍽️', Cafe: '☕', 'Fast food': '🍔', Bar: '🍺', Pub: '🍺',
+        Hospital: '🏥', Clinic: '🏥', Pharmacy: '💊', Hotel: '🏨',
+        Parking: '🅿️', 'Petrol station': '⛽', 'Charging point': '🔋',
+        School: '🏫', College: '🎓', University: '🎓',
+        Supermarket: '🛒', 'Shopping centre': '🛍️',
+        Park: '🌳', Beach: '🏖️', Stadium: '🏟️', Museum: '🏛️',
+        'Place of worship': '🕌', Attraction: '🎡', Viewpoint: '🏔️',
+        City: '🌆', Town: '🏘️', Village: '🏡',
+        Neighbourhood: '📍', Address: '📍', Street: '🛣️',
+    };
 
-    let results = [];
-    let activeIndex = -1;
-    let debounceTimer = null;
-    let inFlight = null;
-    let near = null;
+    function iconFor(category) {
+        return CATEGORY_ICONS[category] || '📍';
+    }
+
+    // ── Recent searches ──────────────────────────────────────────────────────
+
+    function getRecent() {
+        try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); }
+        catch { return []; }
+    }
+
+    function saveRecent(result) {
+        try {
+            const list = getRecent().filter(r => r.primary !== result.primary);
+            list.unshift({ primary: result.primary, secondary: result.secondary,
+                           category: result.category, lat: result.lat, lng: result.lng });
+            localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, MAX_RECENT)));
+        } catch {}
+    }
+
+    // ── State ─────────────────────────────────────────────────────────────────
+
+    let inputEl, coordsDisplay, nearButton;
+    let overlay, overlayInput, overlayResults;
+    let results = [], activeIndex = -1;
+    let debounceTimer = null, inFlight = null;
+    let near = null, overlayOpen = false;
+
+    // ── Init ─────────────────────────────────────────────────────────────────
 
     function init() {
-        input = document.getElementById('destName');
-        list = document.getElementById('searchSuggestions');
-        chosenLine = document.getElementById('coordsDisplay');
-        nearButton = document.getElementById('useMyLocation');
-        if (!input || !list) return;
+        inputEl       = document.getElementById('destName');
+        coordsDisplay = document.getElementById('coordsDisplay');
+        nearButton    = document.getElementById('useMyLocation');
+        if (!inputEl) return;
 
         near = WayseraSearch.recallPosition();
-        updateNearButton();
+        if (nearButton) {
+            nearButton.style.display = near ? 'none' : 'inline-flex';
+            nearButton.addEventListener('click', askForLocation);
+        }
 
-        input.setAttribute('role', 'combobox');
-        input.setAttribute('aria-expanded', 'false');
-        input.setAttribute('aria-autocomplete', 'list');
-        input.setAttribute('aria-controls', 'searchSuggestions');
-        list.setAttribute('role', 'listbox');
+        buildOverlay();
+        inputEl.addEventListener('focus', openOverlay);
+        inputEl.addEventListener('click', openOverlay);
+        // Read-only visual; actual value is set in choose()
+        inputEl.setAttribute('readonly', 'true');
+    }
 
-        input.addEventListener('input', onInput);
-        input.addEventListener('keydown', onKeyDown);
-        input.addEventListener('focus', () => {
-            if (results.length) open();
+    // ── Overlay build ─────────────────────────────────────────────────────────
+
+    function buildOverlay() {
+        overlay = document.createElement('div');
+        overlay.className = 'search-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-label', 'Search destination');
+
+        // Header row
+        const header = document.createElement('div');
+        header.className = 'search-overlay-header';
+
+        const backBtn = document.createElement('button');
+        backBtn.className = 'search-back-btn';
+        backBtn.setAttribute('aria-label', 'Cancel');
+        backBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M19 12H5M5 12l7-7M5 12l7 7"
+                  stroke="currentColor" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
+        backBtn.addEventListener('click', closeOverlay);
+
+        overlayInput = document.createElement('input');
+        overlayInput.type = 'text';
+        overlayInput.className = 'search-overlay-input';
+        overlayInput.placeholder = 'Search for a place…';
+        overlayInput.autocomplete = 'off';
+        overlayInput.spellcheck = false;
+        overlayInput.setAttribute('role', 'combobox');
+        overlayInput.setAttribute('aria-expanded', 'false');
+        overlayInput.setAttribute('aria-autocomplete', 'list');
+
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'search-clear-btn';
+        clearBtn.setAttribute('aria-label', 'Clear search');
+        clearBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9" fill="currentColor" opacity="0.2"/>
+            <path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>`;
+        clearBtn.style.display = 'none';
+        clearBtn.addEventListener('mousedown', e => {
+            e.preventDefault();
+            overlayInput.value = '';
+            clearBtn.style.display = 'none';
+            renderRecent();
+            overlayInput.focus();
         });
 
-        if (nearButton) nearButton.addEventListener('click', askForLocation);
+        overlayInput.addEventListener('input', () => {
+            clearBtn.style.display = overlayInput.value ? '' : 'none';
+            onOverlayInput();
+        });
+        overlayInput.addEventListener('keydown', onKeyDown);
 
-        document.addEventListener('click', (event) => {
-            if (!event.target.closest('.search-box') && !event.target.closest('.search-near')) {
-                close();
+        header.append(backBtn, overlayInput, clearBtn);
+
+        // Results pane
+        overlayResults = document.createElement('div');
+        overlayResults.className = 'search-overlay-results';
+        overlayResults.setAttribute('role', 'listbox');
+
+        overlay.append(header, overlayResults);
+        document.body.appendChild(overlay);
+    }
+
+    // ── Open / close ──────────────────────────────────────────────────────────
+
+    function openOverlay() {
+        if (overlayOpen) return;
+        overlayOpen = true;
+        // Refresh location — it may have arrived after init() ran
+        near = WayseraSearch.recallPosition() || near;
+        overlay.classList.add('is-open');
+        overlayInput.value = inputEl.value;
+        document.body.style.overflow = 'hidden';
+
+        requestAnimationFrame(async () => {
+            overlayInput.focus();
+
+            const query = overlayInput.value.trim();
+            if (query.length >= MIN_QUERY) {
+                run(query);
+                return;
+            }
+
+            // If we already have a location, show nearby immediately
+            if (near) {
+                loadNearby();
+                return;
+            }
+
+            // Location is being fetched — show a gentle status and wait
+            renderStatus('Finding places near you…');
+            if (window._wayseraLocation) {
+                const loc = await window._wayseraLocation;
+                if (!overlayOpen) return;           // user dismissed while waiting
+                if (loc) {
+                    near = loc;
+                    loadNearby();
+                } else {
+                    renderRecent();
+                }
+            } else {
+                renderRecent();
             }
         });
     }
 
-    // ------------------------------------------------------------------ input
+    function closeOverlay() {
+        if (!overlayOpen) return;
+        overlayOpen = false;
+        overlay.classList.remove('is-open');
+        overlayResults.replaceChildren();
+        document.body.style.overflow = '';
+        activeIndex = -1;
+    }
 
-    function onInput() {
-        clearChoice();
+    // ── Input handling ────────────────────────────────────────────────────────
+
+    function onOverlayInput() {
         clearTimeout(debounceTimer);
-
-        const query = input.value.trim();
-        if (query.length < MIN_QUERY) {
-            results = [];
-            close();
-            return;
-        }
-
+        const query = overlayInput.value.trim();
+        if (query.length < MIN_QUERY) { renderRecent(); return; }
         debounceTimer = setTimeout(() => run(query), DEBOUNCE_MS);
     }
 
     async function run(query) {
-        // Drop whatever is still in flight; its answer is already out of date.
         if (inFlight) inFlight.abort();
         inFlight = new AbortController();
-
         renderStatus('Searching…');
-
         try {
-            results = await WayseraSearch.search(query, {
-                near,
-                signal: inFlight.signal
-            });
-            render();
-        } catch (error) {
-            if (error.name === 'AbortError') return; // Superseded, not failed.
-            results = [];
-            renderStatus('Could not reach the search service. Check your connection.');
+            results = await WayseraSearch.search(query, { near, signal: inFlight.signal });
+            renderResults();
+        } catch (err) {
+            if (err.name === 'AbortError') return;
+            renderStatus('Could not reach search service. Check your connection.');
         }
     }
 
-    // --------------------------------------------------------------- keyboard
+    // ── Rendering ─────────────────────────────────────────────────────────────
 
-    function onKeyDown(event) {
-        if (!results.length) return;
-
-        if (event.key === 'ArrowDown') {
-            event.preventDefault();
-            move(1);
-        } else if (event.key === 'ArrowUp') {
-            event.preventDefault();
-            move(-1);
-        } else if (event.key === 'Enter') {
-            if (activeIndex >= 0) {
-                event.preventDefault();
-                choose(activeIndex);
-            }
-        } else if (event.key === 'Escape') {
-            close();
-        }
-    }
-
-    function move(delta) {
-        activeIndex = (activeIndex + delta + results.length) % results.length;
-        highlight();
-        const row = list.children[activeIndex];
-        if (row) row.scrollIntoView({ block: 'nearest' });
-    }
-
-    function highlight() {
-        Array.from(list.children).forEach((row, index) => {
-            const isActive = index === activeIndex;
-            row.classList.toggle('is-active', isActive);
-            row.setAttribute('aria-selected', String(isActive));
-        });
-        input.setAttribute(
-            'aria-activedescendant',
-            activeIndex >= 0 ? `suggestion-${activeIndex}` : ''
-        );
-    }
-
-    // ---------------------------------------------------------------- results
-
-    function render() {
-        activeIndex = -1;
-        list.replaceChildren();
-
+    function renderResults() {
+        overlayResults.replaceChildren();
         if (!results.length) {
             renderStatus('No places found. Try a different search.');
             return;
         }
+        results.forEach((r, i) => overlayResults.appendChild(makeItem(r, false, () => choose(r))));
+        overlayInput.setAttribute('aria-expanded', 'true');
+    }
 
-        results.forEach((result, index) => {
-            const row = document.createElement('div');
-            row.className = 'suggestion-item';
-            row.id = `suggestion-${index}`;
-            row.setAttribute('role', 'option');
-            row.setAttribute('aria-selected', 'false');
-            row.addEventListener('mousedown', (event) => {
-                // mousedown, not click: the input blurs first and the list
-                // would already be closed by the time a click landed.
-                event.preventDefault();
-                choose(index);
-            });
+    async function loadNearby() {
+        if (inFlight) inFlight.abort();
+        inFlight = new AbortController();
+        renderStatus('Finding places near you…');
+        try {
+            const nearby = await WayseraSearch.searchNearby(near, inFlight.signal);
+            if (!nearby.length) { renderRecent(); return; }
 
-            const main = document.createElement('div');
-            main.className = 'suggestion-main';
+            overlayResults.replaceChildren();
 
-            const primary = document.createElement('div');
-            primary.className = 'suggestion-text';
-            // Place names come from a third-party geocoder, so text only.
-            primary.textContent = result.primary;
-
-            const secondary = document.createElement('div');
-            secondary.className = 'suggestion-coords';
-            secondary.textContent = [result.category, result.secondary]
-                .filter(Boolean)
-                .join(' · ');
-
-            main.append(primary, secondary);
-            row.appendChild(main);
-
-            if (result.distance) {
-                const distance = document.createElement('div');
-                distance.className = 'suggestion-distance';
-                distance.textContent = result.distance;
-                row.appendChild(distance);
+            const recent = getRecent();
+            if (recent.length) {
+                const recLabel = document.createElement('div');
+                recLabel.className = 'search-section-label';
+                recLabel.textContent = 'Recent';
+                overlayResults.appendChild(recLabel);
+                recent.forEach(r => overlayResults.appendChild(makeItem(r, true, () => choose(r))));
             }
 
-            list.appendChild(row);
+            const nearLabel = document.createElement('div');
+            nearLabel.className = 'search-section-label';
+            nearLabel.textContent = 'Near you';
+            overlayResults.appendChild(nearLabel);
+
+            results = nearby;
+            nearby.forEach(r => overlayResults.appendChild(makeItem(r, false, () => choose(r))));
+        } catch (err) {
+            if (err.name === 'AbortError') return;
+            renderRecent();
+        }
+    }
+
+    function renderRecent() {
+        overlayResults.replaceChildren();
+        results = [];
+        activeIndex = -1;
+
+        const recent = getRecent();
+        if (!recent.length) {
+            const hint = document.createElement('div');
+            hint.className = 'search-hint';
+            hint.textContent = 'Search for a city, landmark, or address';
+            overlayResults.appendChild(hint);
+            return;
+        }
+
+        const label = document.createElement('div');
+        label.className = 'search-section-label';
+        label.textContent = 'Recent';
+        overlayResults.appendChild(label);
+
+        recent.forEach(r => {
+            const item = makeItem(r, true, () => choose(r));
+            overlayResults.appendChild(item);
         });
-
-        open();
     }
 
-    function renderStatus(message) {
-        list.replaceChildren();
-        const row = document.createElement('div');
-        row.className = 'suggestion-status';
-        row.textContent = message;
-        list.appendChild(row);
-        open();
+    function renderStatus(msg) {
+        overlayResults.replaceChildren();
+        const div = document.createElement('div');
+        div.className = 'search-hint';
+        div.textContent = msg;
+        overlayResults.appendChild(div);
+        overlayInput.setAttribute('aria-expanded', 'false');
     }
 
-    function choose(index) {
-        const result = results[index];
-        if (!result) return;
+    function makeItem(result, isRecent, onChoose) {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
 
-        input.value = result.primary;
+        // Icon bubble
+        const iconWrap = document.createElement('div');
+        iconWrap.className = 'suggestion-icon-wrap';
+        iconWrap.textContent = isRecent ? '🕐' : iconFor(result.category);
+
+        // Text block
+        const main = document.createElement('div');
+        main.className = 'suggestion-main';
+
+        const primary = document.createElement('div');
+        primary.className = 'suggestion-text';
+        primary.textContent = result.primary;
+
+        const secondary = document.createElement('div');
+        secondary.className = 'suggestion-coords';
+        secondary.textContent = [result.category, result.secondary].filter(Boolean).join(' · ');
+
+        main.append(primary, secondary);
+
+        // Distance
+        if (result.distance && !isRecent) {
+            const dist = document.createElement('div');
+            dist.className = 'suggestion-distance';
+            dist.textContent = result.distance;
+            item.append(iconWrap, main, dist);
+        } else {
+            item.append(iconWrap, main);
+        }
+
+        item.addEventListener('mousedown', e => { e.preventDefault(); onChoose(); });
+        item.addEventListener('touchend',  e => { e.preventDefault(); onChoose(); });
+        return item;
+    }
+
+    // ── Choose ────────────────────────────────────────────────────────────────
+
+    function choose(result) {
+        inputEl.value = result.primary;
         document.getElementById('destLat').value = result.lat.toFixed(6);
         document.getElementById('destLng').value = result.lng.toFixed(6);
 
-        if (chosenLine) {
-            chosenLine.replaceChildren();
-            const label = document.createElement('span');
-            label.textContent = [result.primary, result.secondary].filter(Boolean).join(' · ');
-            chosenLine.appendChild(label);
-            chosenLine.style.display = 'block';
+        if (coordsDisplay) {
+            coordsDisplay.textContent =
+                [result.primary, result.secondary].filter(Boolean).join(' · ');
+            coordsDisplay.style.display = 'block';
         }
 
+        saveRecent(result);
+        closeOverlay();
         results = [];
-        close();
     }
 
-    function clearChoice() {
-        if (chosenLine) chosenLine.style.display = 'none';
+    // ── Keyboard navigation ───────────────────────────────────────────────────
+
+    function onKeyDown(event) {
+        if (event.key === 'Escape') { closeOverlay(); return; }
+        if (!results.length) return;
+
+        const items = overlayResults.querySelectorAll('.suggestion-item');
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            activeIndex = (activeIndex + 1) % results.length;
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            activeIndex = (activeIndex - 1 + results.length) % results.length;
+        } else if (event.key === 'Enter' && activeIndex >= 0) {
+            event.preventDefault();
+            choose(results[activeIndex]);
+            return;
+        } else return;
+
+        items.forEach((el, i) => el.classList.toggle('is-active', i === activeIndex));
+        if (items[activeIndex]) items[activeIndex].scrollIntoView({ block: 'nearest' });
     }
 
-    function open() {
-        list.classList.add('show');
-        input.setAttribute('aria-expanded', 'true');
-    }
-
-    function close() {
-        list.classList.remove('show');
-        input.setAttribute('aria-expanded', 'false');
-        activeIndex = -1;
-    }
-
-    // ---------------------------------------------------------------- near me
-
-    function updateNearButton() {
-        if (!nearButton) return;
-        // Hidden when we already have a position to bias by, so nobody is
-        // asked for a permission we do not need.
-        nearButton.style.display = near ? 'none' : 'inline-flex';
-    }
+    // ── Location bias ─────────────────────────────────────────────────────────
 
     function askForLocation() {
         if (!navigator.geolocation) return;
-
         nearButton.disabled = true;
         nearButton.textContent = 'Finding you…';
-
         navigator.geolocation.getCurrentPosition(
-            (position) => {
-                near = { lat: position.coords.latitude, lng: position.coords.longitude };
+            pos => {
+                near = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                 WayseraSearch.rememberPosition(near.lat, near.lng);
                 nearButton.disabled = false;
-                nearButton.textContent = 'Search near me';
-                updateNearButton();
-                if (input.value.trim().length >= MIN_QUERY) run(input.value.trim());
+                nearButton.style.display = 'none';
+                if (overlayOpen && overlayInput.value.trim().length >= MIN_QUERY) {
+                    run(overlayInput.value.trim());
+                }
             },
-            () => {
-                nearButton.disabled = false;
-                nearButton.textContent = 'Search near me';
-            },
+            () => { nearButton.disabled = false; nearButton.textContent = 'Search near me'; },
             { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
         );
     }
+
+    // If location arrives while the overlay is already open with no query typed,
+    // automatically load nearby places without the user doing anything.
+    window.addEventListener('waysera:location', ({ detail }) => {
+        near = detail;
+        if (overlayOpen && overlayInput.value.trim().length < MIN_QUERY) {
+            loadNearby();
+        }
+        // Also update the "Search near me" button visibility
+        if (nearButton) nearButton.style.display = 'none';
+    });
 
     window.addEventListener('load', init);
 })();

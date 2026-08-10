@@ -499,10 +499,16 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .timer {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ios-orange);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--status-success);
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  background: rgba(52, 199, 89, 0.12);
+  padding: 2px 8px;
+  border-radius: 999px;
+  display: inline-block;
 }
 
 .member-count {
@@ -602,17 +608,19 @@ input[type="number"]::-webkit-outer-spin-button {
   position: relative;
 }
 
-/* iOS handle indicator */
-.sheet-header::before {
-  content: '';
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 36px;
-  height: 4px;
-  background: var(--ios-gray-light);
-  border-radius: 2px;
+/* iOS handle indicator — only used on desktop (mobile has .sheet-drag-pill) */
+@media (min-width: 769px) {
+  .sheet-header::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    background: var(--ios-gray-light);
+    border-radius: 2px;
+  }
 }
 
 .sheet-header h3 {
@@ -1130,39 +1138,26 @@ input[type="number"]::-webkit-outer-spin-button {
   margin: 0 4px;
 }
 
-/* Exit Navigation Button */
+/* Exit button: sits inline inside the instruction card (right edge) */
 .nav-exit-btn {
-  position: absolute;
-  top: calc(env(safe-area-inset-top, 20px) + 30px);
-  right: 30px;
-  width: 48px;
-  height: 48px;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.95);  /* Very opaque - no blur needed */
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-  z-index: 510;  /* Above nav-panel */
-  pointer-events: auto;  /* Make close button clickable */
-  /* NO backdrop-filter - this was blurring the map behind! */
-}
-
-.nav-exit-btn svg {
   color: #FFFFFF;
-  transition: transform 0.2s;
+  transition: background 0.15s ease;
+  pointer-events: auto;
+  margin-left: 8px;
 }
 
 .nav-exit-btn:active {
-  transform: scale(0.9);
-  background: rgba(255, 59, 48, 0.8);
-}
-
-.nav-exit-btn:active svg {
-  transform: rotate(90deg);
+  background: rgba(255, 59, 48, 0.75);
 }
 
 /* Hide room header and bottom sheet in navigation mode */
@@ -1959,26 +1954,214 @@ a,
 
 /* ============= Navigation voice toggle ============= */
 
+/* Voice is a flex item in the nav-panel-content column,
+   sitting just below the instruction card, left-aligned */
 .nav-voice-btn {
-  position: absolute;
-  top: calc(16px + env(safe-area-inset-top));
-  left: 16px;
-  z-index: 10;
-  padding: 8px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  position: relative;
+  align-self: flex-start;
+  margin-left: 16px;
+  margin-top: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(10, 12, 20, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #FFFFFF;
-  font-family: var(--font-family);
-  font-size: 13.5px;
-  font-weight: 600;
   cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.15s ease, opacity 0.15s ease;
+  flex-shrink: 0;
 }
 
 .nav-voice-btn[aria-pressed="false"] {
-  opacity: 0.6;
+  opacity: 0.5;
+}
+
+.nav-voice-btn:active {
+  background: rgba(79, 70, 229, 0.7);
+}
+
+/* ============= Full-screen search overlay (Google Maps style) ============= */
+
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  /* Slide up from bottom on mobile, fade on desktop */
+  transform: translateY(100%);
+  opacity: 0;
+  transition:
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity   0.28s ease;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.search-overlay.is-open {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+@media (min-width: 600px) {
+  .search-overlay {
+    transform: none;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .search-overlay.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Header: back button + input + clear */
+.search-overlay-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.search-back-btn {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.search-back-btn:active { background: var(--bg-tertiary); }
+
+.search-overlay-input {
+  flex: 1;
+  height: 46px;
+  padding: 0 var(--space-4);
+  font-size: 16px;
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-md);
+  outline: none;
+  -webkit-appearance: none;
+  transition: border-color var(--transition-fast);
+}
+
+.search-overlay-input:focus {
+  border-color: var(--waysera-primary);
+}
+
+.search-overlay-input::placeholder { color: var(--text-tertiary); }
+
+.search-clear-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Results pane */
+.search-overlay-results {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.search-section-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: var(--space-4) var(--space-4) var(--space-2);
+}
+
+.search-hint {
+  padding: 48px var(--space-5);
+  font-size: 15px;
+  color: var(--text-tertiary);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Suggestion row */
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  min-height: 64px;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.suggestion-item:active,
+.suggestion-item.is-active { background: var(--bg-tertiary); }
+
+/* Icon bubble */
+.suggestion-icon-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  flex-shrink: 0;
+}
+
+.suggestion-main { flex: 1; min-width: 0; }
+
+.suggestion-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-coords {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.suggestion-distance {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--waysera-primary);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ============= Destination search ============= */
@@ -2127,9 +2310,30 @@ a,
   flex-direction: column;
 }
 
+/* ---- Animated hero gradient ---- */
+@keyframes heroFlow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 /* Hero section */
 .home-hero {
-  background: var(--waysera-gradient);
+  background: linear-gradient(-45deg,
+    #FF3B30,
+    #FF6B35,
+    #FF9500,
+    #FFCC00,
+    #30D158,
+    #00C7BE,
+    #32ADE6,
+    #0A84FF,
+    #5E5CE6,
+    #BF5AF2,
+    #FF375F,
+    #FF3B30
+  );
+  background-size: 800% 800%;
   padding: max(env(safe-area-inset-top, 20px), 20px) var(--space-5) var(--space-8);
   display: flex;
   flex-direction: column;
@@ -2139,62 +2343,97 @@ a,
   overflow: hidden;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .home-hero {
+    animation: heroFlow 18s ease infinite;
+  }
+}
+
 .home-hero-bg-mark {
   position: absolute;
-  width: 260px;
-  height: 260px;
-  opacity: 0.07;
-  bottom: -60px;
-  right: -40px;
+  width: 300px;
+  height: 300px;
+  opacity: 0.06;
+  bottom: -80px;
+  right: -50px;
   pointer-events: none;
 }
 
-.home-hero-mark {
-  width: 52px;
-  height: 52px;
+/* Icon ring */
+.hero-icon-ring {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   margin-top: var(--space-4);
   position: relative;
   z-index: 1;
+  box-shadow: 0 0 0 6px rgba(255,255,255,0.08), 0 8px 24px rgba(0,0,0,0.2);
 }
 
+.home-hero-mark {
+  width: 44px;
+  height: 44px;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
+}
+
+/* Text with visible dark outline — stays crisp on every gradient colour */
 .home-hero-name {
-  font-size: 38px;
+  font-size: 42px;
   font-weight: 800;
-  letter-spacing: -1px;
+  letter-spacing: -1.5px;
   color: #FFFFFF;
-  margin: 0;
+  margin: var(--space-2) 0 0;
   position: relative;
   z-index: 1;
+  -webkit-text-stroke: 2px rgba(0, 0, 0, 0.35);
+  paint-order: stroke fill;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.18);
+  text-transform: uppercase;
 }
 
 .home-hero-tagline {
-  font-size: 16px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
-  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin: 2px 0 0;
   position: relative;
   z-index: 1;
+  letter-spacing: 0.5px;
+  -webkit-text-stroke: 1.5px rgba(0, 0, 0, 0.3);
+  paint-order: stroke fill;
+  text-transform: uppercase;
 }
+
 
 .home-hero-pills {
   display: flex;
   gap: var(--space-2);
-  margin-top: var(--space-2);
+  margin-top: var(--space-3);
   flex-wrap: wrap;
   justify-content: center;
   position: relative;
   z-index: 1;
 }
 
+/* Glassmorphism pills */
 .home-hero-pill {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 999px;
-  padding: 4px 12px;
-  letter-spacing: 0.2px;
+  padding: 5px 14px;
+  letter-spacing: 0.3px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 /* Home body */
@@ -2517,11 +2756,20 @@ a,
   border-radius: var(--radius-lg) !important;
 }
 
-/* Cleaner instruction card shape */
+/* Instruction card: floating, same pattern as stats bar */
 .nav-instruction-container {
-  border-radius: var(--radius-xl) !important;
+  border-radius: 20px !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   background: rgba(10, 12, 20, 0.93) !important;
+  margin: max(env(safe-area-inset-top, 12px), 12px) 12px 0 !important;
+}
+
+/* Stats bar: push to the bottom of the flex column */
+.nav-stats-container {
+  margin-top: auto !important;
+  margin-bottom: max(env(safe-area-inset-bottom, 12px), 12px) !important;
+  margin-left: 12px !important;
+  margin-right: 12px !important;
 }
 
 /* Instruction text hierarchy */
@@ -2558,33 +2806,319 @@ a,
   letter-spacing: -0.5px !important;
 }
 
-/* Voice toggle: blend into the map */
-.nav-voice-btn {
-  background: rgba(10, 12, 20, 0.75) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  font-size: 13px !important;
-  border-radius: 999px !important;
-  padding: 8px 16px !important;
-}
+/* Voice/exit button overrides removed — styles now defined in base rules above */
 
-/* Exit button: more refined */
-.nav-exit-btn {
-  background: rgba(10, 12, 20, 0.85) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  width: 44px !important;
-  height: 44px !important;
-}
-.nav-exit-btn:active {
-  background: rgba(255, 59, 48, 0.85) !important;
-}
-
-/* Darken the gradient overlay so instruction cards stand out more */
+/* Nav panel: fully transparent — the floating cards provide all backgrounds.
+   No overlay haze means both cards clearly float on the live map. */
 .nav-panel {
-  background: linear-gradient(
-    180deg,
-    rgba(5, 7, 15, 0.55) 0%,
-    rgba(5, 7, 15, 0.2) 35%,
-    rgba(5, 7, 15, 0.0) 65%,
-    rgba(5, 7, 15, 0.0) 100%
-  ) !important;
+  background: transparent !important;
+}
+
+/* ============================================================
+   MOBILE MAP UI POLISH  (applies only on small screens)
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+  /* ---- Floating pill header ---- */
+  .room-header {
+    top: max(12px, calc(env(safe-area-inset-top) + 6px)) !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    padding: 10px 14px !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    box-shadow:
+      0 1px 0 rgba(0,0,0,0.04),
+      0 4px 20px rgba(0,0,0,0.16) !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .room-header {
+      background: rgba(18, 20, 30, 0.93) !important;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,0.05),
+        0 4px 20px rgba(0,0,0,0.55) !important;
+    }
+  }
+
+  .room-info h1 {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.2px !important;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .room-code-btn {
+    font-size: 11px !important;
+    margin-top: 1px !important;
+  }
+
+  .room-timer   { font-size: 13px !important; font-weight: 700 !important; }
+  .room-member-count { font-size: 11px !important; }
+
+  /* ---- Bottom sheet ---- */
+  .bottom-sheet {
+    border-top-left-radius: 22px !important;
+    border-top-right-radius: 22px !important;
+    transform: translateY(calc(100% - 96px)) !important;
+    box-shadow: 0 -2px 32px rgba(0,0,0,0.18) !important;
+  }
+
+  .bottom-sheet.expanded {
+    transform: translateY(0) !important;
+  }
+
+  /* Sheet header: taller hit area, better layout */
+  .sheet-header {
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    cursor: pointer !important;
+  }
+
+  /* Drag pill */
+  .sheet-drag-pill {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--ios-gray-light);
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
+
+  /* Peek row: shows only when NOT expanded */
+  .sheet-peek-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px 12px;
+    opacity: 1;
+    transition: opacity 0.2s;
+  }
+
+  .bottom-sheet.expanded .sheet-peek-row {
+    display: none;
+  }
+
+  .sheet-peek-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+  }
+
+  .sheet-peek-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    background: var(--bg-tertiary);
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+
+  /* Expanded header row: shows only when expanded */
+  .sheet-expanded-row {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 18px 12px;
+  }
+
+  .bottom-sheet.expanded .sheet-expanded-row {
+    display: flex;
+  }
+
+  .sheet-full-title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  /* Sheet content */
+  .sheet-content {
+    padding: 0 16px 16px !important;
+    overscroll-behavior: contain;
+  }
+
+  /* Member cards */
+  .group-member {
+    border-radius: var(--radius-md);
+    border-left: none !important;
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 8px;
+    padding: 12px 14px !important;
+    background: var(--bg-secondary);
+  }
+
+  .group-member-head { margin-bottom: 4px; }
+
+  /* Quick message chips */
+  .quick-message {
+    padding: 8px 16px !important;
+    font-size: 13.5px !important;
+    border-radius: 999px !important;
+    background: var(--bg-tertiary) !important;
+    border: 1px solid var(--border-subtle) !important;
+  }
+
+  /* Action buttons */
+  .action-buttons {
+    padding-top: 12px !important;
+    gap: 10px !important;
+  }
+
+  .btn { border-radius: 14px !important; }
+  .btn-primary { font-size: 16px !important; padding: 14px !important; }
+  .btn-secondary { font-size: 15px !important; padding: 12px !important; }
+  .btn-danger.btn-full { font-size: 15px !important; padding: 14px !important; }
+
+  /* ---- Navigation instruction card (mobile) ---- */
+  .nav-instruction-container {
+    padding: 16px 18px !important;
+    gap: 14px !important;
+    border-radius: 18px !important;
+  }
+
+  .nav-icon-wrapper {
+    width: 54px !important;
+    height: 54px !important;
+    border-radius: 14px !important;
+  }
+
+  .nav-direction-arrow {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .nav-instruction   { font-size: 19px !important; }
+  .nav-distance-next { font-size: 13px !important; }
+
+  /* Stats bar */
+  .nav-stats-container {
+    padding: 14px 16px !important;
+    border-radius: 18px !important;
+    margin-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .nav-stat-value { font-size: 20px !important; }
+  .nav-stat-label { font-size: 9px !important; }
+
+  /* Voice toggle inherits flex-item positioning from base rules */
+}
+
+/* ---- Journey complete overlay ---- */
+.journey-complete-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: toastIn 0.4s ease-out;
+}
+
+.journey-complete-card {
+  background: var(--bg-secondary);
+  border-radius: 28px;
+  padding: 40px 36px 32px;
+  text-align: center;
+  width: calc(100% - 48px);
+  max-width: 340px;
+  box-shadow: var(--shadow-lg);
+}
+
+.journey-complete-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--status-success);
+  color: #fff;
+  font-size: 32px;
+  line-height: 64px;
+  margin: 0 auto 20px;
+}
+
+.journey-complete-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.journey-complete-sub {
+  font-size: 15px;
+  color: var(--text-tertiary);
+  margin: 0 0 24px;
+}
+
+.journey-complete-bar {
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.journey-complete-progress {
+  height: 100%;
+  width: 0%;
+  background: var(--status-success);
+  border-radius: 2px;
+  transition: width 5s linear;
+}
+
+/* ---- Navigation: fully hide bottom sheet ----
+   Two classes = higher specificity than any single-class !important rule.
+   This beats `.bottom-sheet { transform: ... !important }` reliably. */
+.bottom-sheet.nav-active {
+  transform: translateY(110%) !important;
+  pointer-events: none !important;
+  transition: transform 0.3s ease !important;
+}
+
+/* ---- Leaflet attribution ---- */
+/* Move attribution above the nav stats bar so it doesn't overlap */
+.leaflet-bottom.leaflet-right .leaflet-control-attribution {
+  position: absolute;
+  bottom: calc(100% + 4px); /* above zoom controls */
+  right: 0;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 4px 0 0 0;
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+/* Hide attribution during navigation to keep the map clean */
+.nav-panel[style*="display: block"] ~ #map .leaflet-control-attribution,
+.nav-panel[style*="display:block"] ~ #map .leaflet-control-attribution {
+  display: none;
+}
+
+/* ---- Zoom control positioning ---- */
+/* bottomright keeps it clear of the nav instruction card (top-left)
+   and the nav stats bar (bottom-centre). */
+.leaflet-bottom.leaflet-right {
+  bottom: 130px; /* above stats bar */
+  right: 12px;
+}
+
+/* On desktop the zoom sits inside the map area, left of the side panel */
+@media (min-width: 769px) {
+  .leaflet-bottom.leaflet-right {
+    bottom: 140px;
+    right: 16px;
+  }
 }

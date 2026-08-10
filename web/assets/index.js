@@ -76,8 +76,6 @@ async function createJourney() {
         lat: parseFloat(document.getElementById('destLat').value),
         lng: parseFloat(document.getElementById('destLng').value)
     };
-    const duration = parseInt(document.getElementById('duration').value, 10) || 180;
-
     if (!destination.name || !Number.isFinite(destination.lat) || !Number.isFinite(destination.lng)) {
         showError('createResult', 'Add a destination and its coordinates to start.');
         return;
@@ -92,7 +90,7 @@ async function createJourney() {
         key,
         destination,
         createdAt: Date.now(),
-        expiresAt: Date.now() + duration * 60000
+        expiresAt: null  // ends when everyone arrives, not on a timer
     };
     await WayseraStore.putJourney(journey);
 
@@ -221,8 +219,10 @@ async function startJourney(code, name) {
     startRecording();
 
     if (currentRoom.destination) initializeMap();
-    // Let the fixed layout paint before Leaflet measures the container
-    setTimeout(() => { if (map) map.invalidateSize(); }, 120);
+    setTimeout(() => {
+        if (map) map.invalidateSize();
+        initBottomSheetDrag();
+    }, 120);
     await session.connect();
 
     startTimer();
@@ -256,10 +256,10 @@ function wireSession(activeSession) {
             }
         }
 
-        WayseraValidate.setText(
-            document.getElementById('memberCount'),
-            personCount(roster.length)
-        );
+        const countText = personCount(roster.length);
+        WayseraValidate.setText(document.getElementById('memberCount'), countText);
+        const peekCount = document.getElementById('sheetPeekCount');
+        if (peekCount) WayseraValidate.setText(peekCount, countText);
         renderGroup(roster);
 
         if (showDirections) drawAllRoutes();
@@ -397,7 +397,7 @@ function initializeMap() {
         
         // Create map with optimized settings for 60fps performance
         map = L.map('map', {
-            zoomControl: true,
+            zoomControl: false,  // added manually at bottomright below
             zoomAnimation: true,
             fadeAnimation: true,
             markerZoomAnimation: true,
@@ -422,7 +422,10 @@ function initializeMap() {
             wheelPxPerZoomLevel: 120,  // Smoother wheel zoom
             zoomAnimationThreshold: 4  // Smooth zoom at all levels
         }).setView([destination.lat, destination.lng], 13);
-        
+
+        // Zoom control at bottom-right so it is never hidden by the nav instruction card
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
         // Tile source: OpenStreetMap locally (no token required), Mapbox in production.
         // The token lives in exactly one place, WAYSERA_CONFIG in config.js, so
         // rotating it is a single edit. No hardcoded fallback copy lives here;
@@ -432,13 +435,12 @@ function initializeMap() {
         const mapboxAllowedHere = !isLocalhost || (window.WAYSERA_CONFIG && window.WAYSERA_CONFIG.USE_MAPBOX_ON_LOCALHOST);
         const useMapbox = Boolean(mapboxToken) && mapboxAllowedHere;
 
+        // CartoDB Voyager: free, no API key, professional look, full OSM data.
+        // Falls back to Mapbox if a token is configured.
         if (!useMapbox) {
-            if (mapboxAllowedHere && !mapboxToken) {
-                console.warn('No Mapbox token configured. Falling back to OpenStreetMap tiles.');
-            }
-            // Free OpenStreetMap tiles for local testing (no token needed)
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
                 maxZoom: 19,
                 detectRetina: true,
                 updateWhenIdle: false,
@@ -686,17 +688,10 @@ function formatHeading(heading) {
 let timerInterval = null;
 
 function startTimer() {
-    if (timerInterval) clearInterval(timerInterval);
-    if (!currentRoom || !currentRoom.expires_at) return;
-
-    const tick = () => {
-        const label = formatEndsIn(currentRoom.expires_at);
-        WayseraValidate.setText(document.getElementById('timer'), label);
-        if (label === 'This journey has ended') clearInterval(timerInterval);
-    };
-
-    tick();
-    timerInterval = setInterval(tick, 1000);
+    // Journeys no longer have a fixed duration — they end when everyone arrives.
+    // Show a simple Live indicator instead of a countdown.
+    const el = document.getElementById('timer');
+    if (el) WayseraValidate.setText(el, 'Live');
 }
 
 
@@ -901,8 +896,39 @@ function checkPeerArrival(message) {
     showToast(`${name} has arrived.`, '', 'toast-message');
     recordEvent('arrived', { memberId: message.memberId, name });
 
-    const waiting = Object.keys(currentRoom.members).length - announcedArrivals.size;
-    if (waiting <= 0) showToast('Everyone has arrived.', '', 'toast-message');
+    const liveMembers = Object.values(currentRoom.members)
+        .filter(m => m.status === 'live' || m.status === 'stale');
+    const waiting = liveMembers.filter(m => !announcedArrivals.has(m.id)).length;
+
+    if (waiting <= 0 && liveMembers.length > 0) {
+        showJourneyComplete();
+    }
+}
+
+function showJourneyComplete() {
+    // Avoid double-triggering
+    if (document.getElementById('journeyCompleteOverlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'journeyCompleteOverlay';
+    overlay.className = 'journey-complete-overlay';
+    overlay.innerHTML = `
+        <div class="journey-complete-card">
+            <div class="journey-complete-icon">✓</div>
+            <h2 class="journey-complete-title">Everyone's here!</h2>
+            <p class="journey-complete-sub">Journey complete. See you next time.</p>
+            <div class="journey-complete-bar"><div class="journey-complete-progress"></div></div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // Animate the progress bar over 5 seconds then leave
+    requestAnimationFrame(() => {
+        const bar = overlay.querySelector('.journey-complete-progress');
+        if (bar) bar.style.width = '100%';
+    });
+
+    setTimeout(() => leaveJourney(), 5000);
 }
 
 // ------------------------------------------------------------- recording
@@ -1179,8 +1205,11 @@ function updateVoiceButton() {
     const button = document.getElementById('voiceToggle');
     if (!button) return;
     const on = voiceEnabled();
-    button.textContent = on ? 'Voice on' : 'Voice off';
     button.setAttribute('aria-pressed', String(on));
+    const iconOn  = button.querySelector('.voice-icon-on');
+    const iconOff = button.querySelector('.voice-icon-off');
+    if (iconOn)  iconOn.style.display  = on ? '' : 'none';
+    if (iconOff) iconOff.style.display = on ? 'none' : '';
 }
 
 /**
@@ -1254,7 +1283,8 @@ function startNavigation() {
     const sheet = document.querySelector('.bottom-sheet');
     const header = document.querySelector('.room-header');
     if (sheet) {
-        sheet.style.transform = 'translateY(100%)';
+        sheet.classList.add('nav-active');
+        sheet.style.transform = ''; // let .nav-active CSS handle it (beats !important)
     }
     if (header) {
         header.style.opacity = '0';
@@ -1303,7 +1333,8 @@ function stopNavigation() {
     const sheet = document.querySelector('.bottom-sheet');
     const header = document.querySelector('.room-header');
     if (sheet) {
-        sheet.style.transform = '';  // let CSS class control peek vs expanded
+        sheet.classList.remove('nav-active');
+        sheet.style.transform = '';
     }
     if (header) {
         header.style.opacity = '1';
@@ -1807,7 +1838,41 @@ window.addEventListener('load', async () => {
 
     prefillName();
     renderPastJourneys();
+
+    // Capture location immediately so search is biased from the first tap.
+    // Low accuracy = fast response, minimal battery. Silent failure is fine —
+    // search still works without it, just without the nearby bias.
+    warmLocationForSearch();
 });
+
+function warmLocationForSearch() {
+    // Return early if already cached recently — expose the resolved promise so
+    // the search overlay can await it without a redundant permission prompt.
+    const cached = WayseraSearch.recallPosition();
+    if (cached && cached.ts && Date.now() - cached.ts < 10 * 60 * 1000) {
+        window._wayseraLocation = Promise.resolve(cached);
+        return;
+    }
+
+    if (!navigator.geolocation || !window.isSecureContext) {
+        window._wayseraLocation = Promise.resolve(null);
+        return;
+    }
+
+    window._wayseraLocation = new Promise(resolve => {
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude, ts: Date.now() };
+                WayseraSearch.rememberPosition(loc.lat, loc.lng);
+                // Notify any open search overlay so it auto-loads nearby
+                window.dispatchEvent(new CustomEvent('waysera:location', { detail: loc }));
+                resolve(loc);
+            },
+            () => resolve(null),
+            { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+        );
+    });
+}
 
 async function enterFromInvite(invite) {
     if (invite.key) {
@@ -1974,6 +2039,54 @@ function requestLocationPermission() {
 
 window.requestLocationPermission = requestLocationPermission;
 window.dismissLocationBanner = dismissLocationBanner;
+
+// ============= BOTTOM SHEET DRAG =============
+
+function initBottomSheetDrag() {
+    if (window.matchMedia('(min-width: 769px)').matches) return;
+    const sheet = document.getElementById('bottomSheet');
+    if (!sheet || sheet._dragInit) return;
+    sheet._dragInit = true;
+
+    const PEEK = 96; // px visible in peek state
+    let startY = 0, startTranslate = 0, lastY = 0, lastT = 0, vel = 0, dragging = false;
+
+    function currentTranslate() {
+        const m = new DOMMatrixReadOnly(getComputedStyle(sheet).transform);
+        return m.m42;
+    }
+
+    function snapSheet(toExpanded) {
+        sheet.style.transform = '';
+        sheet.style.transition = '';
+        if (toExpanded) sheet.classList.add('expanded');
+        else sheet.classList.remove('expanded');
+    }
+
+    sheet.addEventListener('touchstart', e => {
+        startY = e.touches[0].clientY;
+        startTranslate = currentTranslate();
+        lastY = startY; lastT = Date.now(); vel = 0; dragging = true;
+        sheet.style.transition = 'none';
+    }, { passive: true });
+
+    window.addEventListener('touchmove', e => {
+        if (!dragging) return;
+        const y = e.touches[0].clientY, now = Date.now();
+        vel = (y - lastY) / Math.max(1, now - lastT);
+        lastY = y; lastT = now;
+        const max = sheet.offsetHeight - PEEK;
+        const t = Math.max(0, Math.min(max, startTranslate + (y - startY)));
+        sheet.style.transform = `translateY(${t}px)`;
+    }, { passive: true });
+
+    window.addEventListener('touchend', () => {
+        if (!dragging) return;
+        dragging = false;
+        const mid = (sheet.offsetHeight - PEEK) * 0.4;
+        snapSheet(vel < -0.3 || currentTranslate() < mid);
+    }, { passive: true });
+}
 
 // ============= TAB SWITCHER =============
 
