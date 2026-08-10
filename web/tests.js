@@ -699,6 +699,51 @@
         assertEqual(joiner.destination.name, 'Gateway of India');
     });
 
+    test('a key request sent to an empty channel is retried', async () => {
+        // The relay has no buffer, so a request made before anyone else is on
+        // the channel simply vanishes. Asking once is not enough.
+        const key = await C().generateJourneyKey();
+        const joiner = await makeSession({ key: null, name: 'Riya' });
+
+        let sentIntoTheVoid = 0;
+        joiner.rawSend = () => { sentIntoTheVoid += 1; return true; };
+        await joiner.requestKey();
+        assertEqual(sentIntoTheVoid, 1, 'first attempt goes nowhere');
+
+        // The host turns up afterwards.
+        const host = await makeSession({ key, name: 'Alex' });
+        const settle = connectPair(host, joiner);
+
+        let prompted = null;
+        host.on('key_request', (request) => { prompted = request; });
+
+        joiner.heartbeat();
+        await settle();
+
+        assert(prompted !== null, 'the request must repeat until somebody answers');
+        assertEqual(prompted.name, 'Riya');
+    });
+
+    test('retries stop once the key has been granted', async () => {
+        const key = await C().generateJourneyKey();
+        const host = await makeSession({ key, name: 'Alex' });
+        const joiner = await makeSession({ key: null, name: 'Riya' });
+        const settle = connectPair(host, joiner);
+
+        await joiner.requestKey();
+        await settle();
+        await host.approveKeyRequest(joiner.memberId);
+        await settle();
+        assert(joiner.key !== null, 'joiner should be in');
+
+        let asked = 0;
+        host.on('key_request', () => { asked += 1; });
+        joiner.heartbeat();
+        joiner.heartbeat();
+        await settle();
+        assertEqual(asked, 0, 'no further requests once we are inside');
+    });
+
     test('denying a request hands over nothing', async () => {
         const host = await makeSession({ key: await C().generateJourneyKey(), name: 'Host' });
         const joiner = await makeSession({ key: null, name: 'Stranger' });
@@ -871,6 +916,26 @@
         await settle();
 
         assertEqual(received.text, 'Need fuel', 'text comes from our table');
+    });
+
+    test('you appear in your own group before any GPS fix', async () => {
+        // Members were only ever added by traffic, and your own position is
+        // what puts you there. Until the first fix arrives you were missing
+        // from your own group list, and the header undercounted by one.
+        const key = await C().generateJourneyKey();
+        const solo = await makeSession({ key, name: 'Alex' });
+        solo.rawSend = () => true;
+
+        await solo.connect();
+
+        const roster = solo.roster();
+        assertEqual(roster.length, 1, 'you are on the journey even with no position');
+        assertEqual(roster[0].name, 'Alex');
+        assert(roster[0].isSelf, 'and marked as you');
+        assertEqual(roster[0].status, 'live');
+        assertEqual(roster[0].lat, undefined, 'with no position yet');
+
+        solo.close();
     });
 
     test('the roster puts you first', async () => {

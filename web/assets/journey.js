@@ -75,6 +75,7 @@ const WayseraJourney = (() => {
 
             // Set while we are waiting on someone to grant us the journey key.
             this.pendingHandoff = null;
+            this.pendingRequest = null;
             // Requests awaiting an Allow/Deny decision from this device.
             this.pendingRequests = new Map();
         }
@@ -103,8 +104,24 @@ const WayseraJourney = (() => {
 
         async connect() {
             this.channelId = await WayseraCrypto.deriveChannelId(this.code);
+            // Put ourselves on the roster straight away. Members are otherwise
+            // only created by incoming traffic, and our own row appeared only
+            // once GPS produced a first fix, so until then you were absent from
+            // your own group and the header was short by one.
+            this.touchSelf();
             this.openSocket();
             this.startTimers();
+        }
+
+        touchSelf() {
+            const existing = this.members.get(this.memberId) || {
+                memberId: this.memberId,
+                name: this.name,
+                isSelf: true
+            };
+            existing.name = this.name;
+            existing.lastSeen = Date.now();
+            this.members.set(this.memberId, existing);
         }
 
         openSocket() {
@@ -199,7 +216,16 @@ const WayseraJourney = (() => {
         }
 
         heartbeat() {
-            if (!this.key) return;
+            this.touchSelf();
+            if (!this.key) {
+                // Still waiting to be let in. The relay keeps no buffer, so a
+                // request made before anyone else was on the channel is gone.
+                // Keep asking: whoever arrives next will see it and be
+                // prompted. Without this, joining before the rest of the group
+                // means waiting forever and nobody ever sees an Allow prompt.
+                this.sendKeyRequest();
+                return;
+            }
             const self = this.members.get(this.memberId);
             if (self && self.lat !== null && self.lat !== undefined) {
                 this.sendPosition(self);
@@ -242,13 +268,8 @@ const WayseraJourney = (() => {
         }
 
         trackSelf(position) {
-            const existing = this.members.get(this.memberId) || {
-                memberId: this.memberId,
-                name: this.name,
-                isSelf: true
-            };
-            Object.assign(existing, position, { lastSeen: Date.now() });
-            this.members.set(this.memberId, existing);
+            this.touchSelf();
+            Object.assign(this.members.get(this.memberId), position);
         }
 
         // ---------------------------------------------------------------- input
@@ -378,14 +399,23 @@ const WayseraJourney = (() => {
             const pair = await WayseraCrypto.generateHandoffKeyPair();
             this.pendingHandoff = pair;
 
-            this.sendHandshake({
+            // Held so the heartbeat can repeat it. The same ephemeral public
+            // key is reused each time, so an approval granted against any
+            // attempt still unwraps.
+            this.pendingRequest = {
                 type: 'key_request',
                 memberId: this.memberId,
                 name: this.name,
-                pub: await WayseraCrypto.exportHandoffPublicKey(pair),
-                ts: Date.now()
-            });
+                pub: await WayseraCrypto.exportHandoffPublicKey(pair)
+            };
+
+            this.sendKeyRequest();
             this.emit('awaiting_key');
+        }
+
+        sendKeyRequest() {
+            if (this.key || !this.pendingRequest) return false;
+            return this.sendHandshake({ ...this.pendingRequest, ts: Date.now() });
         }
 
         async handleHandshake(raw) {
@@ -450,6 +480,7 @@ const WayseraJourney = (() => {
 
             this.key = key;
             this.pendingHandoff = null;
+            this.pendingRequest = null; // Stops the heartbeat asking again.
             this.emit('key_granted', { key });
             this.announce();
         }
