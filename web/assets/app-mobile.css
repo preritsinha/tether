@@ -263,9 +263,8 @@ body {
   padding-right: env(safe-area-inset-right);
   /* Prevent overscroll */
   overscroll-behavior-y: none;
-  /* Hardware acceleration */
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
+  /* Note: transform removed — it broke position:fixed on the map page.
+     GPU acceleration is applied individually to Leaflet elements below. */
 }
 
 /* ============= Home Page ============= */
@@ -2117,4 +2116,475 @@ a,
 
 .coords-fallback[open] > summary::before {
   content: '– ';
+}
+
+/* ============= Home page redesign ============= */
+
+#homePage {
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hero section */
+.home-hero {
+  background: var(--waysera-gradient);
+  padding: max(env(safe-area-inset-top, 20px), 20px) var(--space-5) var(--space-8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  position: relative;
+  overflow: hidden;
+}
+
+.home-hero-bg-mark {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  opacity: 0.07;
+  bottom: -60px;
+  right: -40px;
+  pointer-events: none;
+}
+
+.home-hero-mark {
+  width: 52px;
+  height: 52px;
+  margin-top: var(--space-4);
+  position: relative;
+  z-index: 1;
+}
+
+.home-hero-name {
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: #FFFFFF;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.home-hero-tagline {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.home-hero-pills {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.home-hero-pill {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  padding: 4px 12px;
+  letter-spacing: 0.2px;
+}
+
+/* Home body */
+.home-body {
+  padding: var(--space-5) var(--space-4) var(--space-8);
+  max-width: 600px;
+  width: 100%;
+  margin: 0 auto;
+  flex: 1;
+}
+
+/* Tab switcher — iOS segmented control style */
+.tab-switcher {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  margin-bottom: var(--space-4);
+  gap: 2px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px var(--space-3);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-family);
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius-lg) - 4px);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.tab-btn.tab-active {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Tab panels */
+.tab-panel {
+  animation: tabFadeIn 0.2s ease-out;
+}
+
+@keyframes tabFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Journey code input — large, monospace, centred */
+.code-input {
+  font-size: 30px !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace !important;
+  letter-spacing: 10px !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  padding: var(--space-4) var(--space-3) !important;
+  color: var(--waysera-primary) !important;
+  font-weight: 700 !important;
+  border-color: var(--waysera-primary) !important;
+  background: color-mix(in srgb, var(--waysera-primary) 6%, var(--bg-tertiary)) !important;
+}
+
+.code-input:focus {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--waysera-primary) 20%, transparent) !important;
+}
+
+.code-input::placeholder {
+  color: color-mix(in srgb, var(--waysera-primary) 35%, transparent) !important;
+  letter-spacing: 10px;
+}
+
+/* Section hint text */
+.section-hint {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-3);
+  margin-top: calc(-1 * var(--space-2));
+}
+
+/* ============= Room header — tappable code ============= */
+
+.room-code-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace;
+  font-size: 12.5px;
+  margin-top: 2px;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity var(--transition-fast);
+}
+
+.room-code-btn:active {
+  opacity: 0.5;
+}
+
+/* ============= Bottom sheet action reorganisation ============= */
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+}
+
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.action-buttons .btn {
+  font-size: 15px;
+  padding: var(--space-3) var(--space-4);
+}
+
+/* Collapse chevron replaces the old ▼ text character */
+.collapse-chevron {
+  color: var(--text-tertiary);
+  transition: transform var(--transition-normal);
+  flex-shrink: 0;
+}
+
+.bottom-sheet.collapsed .collapse-chevron {
+  transform: rotate(180deg);
+}
+
+/* ============================================================
+   MAPS-STYLE ROOM PAGE
+   .room-active is added by JS only when entering a journey.
+   Without it the room page respects display:none from HTML.
+   Mobile: floating pill header + bottom sheet peek state.
+   Desktop (≥769px): pill header + right side panel.
+   ============================================================ */
+
+/* Room page: pin to viewport — only when JS activates it */
+#roomPage.room-active {
+  position: fixed;
+  inset: 0;
+  height: auto;
+  overflow: hidden;
+  display: block; /* mobile default; desktop overridden below */
+}
+
+/* Map: fill the entire room page on mobile */
+#roomPage.room-active #map {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  width: auto;
+  z-index: 1;
+  flex: none;
+  background: #e8e0d8;
+}
+
+/* ---- Floating pill header ---- */
+.room-header {
+  position: fixed !important;
+  top: max(16px, calc(env(safe-area-inset-top) + 8px)) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  right: auto !important;
+  width: calc(100% - 32px);
+  max-width: 480px;
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0,0,0,0.06) !important;
+  padding: 10px 16px !important;
+  min-height: auto !important;
+  z-index: 200 !important;
+  transition: opacity 0.3s ease !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .room-header {
+    background: rgba(17, 24, 39, 0.9) !important;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.08) !important;
+  }
+}
+
+.room-info h1 {
+  font-size: 15px;
+  max-width: none;
+}
+
+/* ---- Location banner: clear the pill header ---- */
+.location-banner {
+  top: max(82px, calc(env(safe-area-inset-top) + 74px)) !important;
+}
+
+/* ---- Bottom sheet: peek by default, slides up on expand ---- */
+.bottom-sheet {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+  border-top-left-radius: var(--radius-xl) !important;
+  border-top-right-radius: var(--radius-xl) !important;
+  box-shadow: 0 -4px 32px rgba(0,0,0,0.14) !important;
+  z-index: 100 !important;
+  max-height: 85vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  /* Peek: only the sheet-header is visible (~72px) */
+  transform: translateY(calc(100% - 72px)) !important;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  padding-bottom: env(safe-area-inset-bottom) !important;
+  touch-action: pan-y !important;
+}
+
+.bottom-sheet.expanded {
+  transform: translateY(0) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .bottom-sheet {
+    background: rgba(17, 24, 39, 0.98) !important;
+    box-shadow: 0 -4px 32px rgba(0,0,0,0.5) !important;
+  }
+}
+
+/* Chevron points up (peek = collapsed), down when expanded */
+.collapse-chevron {
+  transition: transform var(--transition-normal) !important;
+}
+
+.bottom-sheet.expanded .collapse-chevron {
+  transform: rotate(180deg) !important;
+}
+
+/* ---- Desktop / tablet: side panel ---- */
+@media (min-width: 769px) {
+  /* Flex row: map left, panel right.
+     !important overrides the JS inline style="display: block" */
+  #roomPage.room-active {
+    display: flex !important;
+    flex-direction: row;
+  }
+
+  /* Map: flex item instead of absolute fill */
+  #roomPage.room-active #map {
+    position: relative !important;
+    inset: auto !important;
+    flex: 1 !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 100% !important;
+  }
+
+  /* Pill header: spans the map area, leaves room for the panel */
+  .room-header {
+    left: 16px !important;
+    right: 396px !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  /* Side panel replaces bottom sheet */
+  .bottom-sheet {
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 380px !important;
+    max-height: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    transform: none !important;
+    box-shadow: none !important;
+    border-left: 1px solid var(--border-subtle) !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+    overflow-y: auto !important;
+  }
+
+  /* No drag handle on desktop */
+  .sheet-header::before,
+  .collapse-chevron { display: none !important; }
+
+  .sheet-header { cursor: default !important; padding-top: var(--space-5) !important; }
+}
+
+/* ============================================================
+   NAVIGATION MODE POLISH
+   ============================================================ */
+
+/* Desktop: nav panel must not cover the side panel */
+@media (min-width: 769px) {
+  #roomPage.room-active .nav-panel {
+    right: 380px;
+  }
+}
+
+/* Remove the distracting float + pulse animations — they read as buggy */
+.nav-icon-wrapper {
+  animation: none !important;
+}
+.nav-instruction-container {
+  animation: none !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Brand colour for the direction icon box */
+.nav-icon-wrapper {
+  background: var(--waysera-primary) !important;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.45) !important;
+  border-radius: var(--radius-lg) !important;
+}
+
+/* Cleaner instruction card shape */
+.nav-instruction-container {
+  border-radius: var(--radius-xl) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(10, 12, 20, 0.93) !important;
+}
+
+/* Instruction text hierarchy */
+.nav-instruction {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.3px !important;
+}
+.nav-distance-next {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  opacity: 0.75;
+}
+
+/* Stats bar: clean card, subtle separator lines */
+.nav-stats-container {
+  background: rgba(10, 12, 20, 0.93) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: var(--radius-xl) !important;
+  margin-bottom: 16px;
+}
+
+/* Stat labels: smaller caps, more breathing room */
+.nav-stat-label {
+  font-size: 10px !important;
+  letter-spacing: 1.2px !important;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin-bottom: 6px !important;
+}
+.nav-stat-value {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.5px !important;
+}
+
+/* Voice toggle: blend into the map */
+.nav-voice-btn {
+  background: rgba(10, 12, 20, 0.75) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  font-size: 13px !important;
+  border-radius: 999px !important;
+  padding: 8px 16px !important;
+}
+
+/* Exit button: more refined */
+.nav-exit-btn {
+  background: rgba(10, 12, 20, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  width: 44px !important;
+  height: 44px !important;
+}
+.nav-exit-btn:active {
+  background: rgba(255, 59, 48, 0.85) !important;
+}
+
+/* Darken the gradient overlay so instruction cards stand out more */
+.nav-panel {
+  background: linear-gradient(
+    180deg,
+    rgba(5, 7, 15, 0.55) 0%,
+    rgba(5, 7, 15, 0.2) 35%,
+    rgba(5, 7, 15, 0.0) 65%,
+    rgba(5, 7, 15, 0.0) 100%
+  ) !important;
 }

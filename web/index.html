@@ -17,7 +17,6 @@
     <meta property="og:description" content="Live group navigation for people heading to the same destination.">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Waysera">
-    <!-- og:image intentionally omitted until a real asset is deployed at a public URL. -->
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Waysera — Every journey, together.">
     <meta name="twitter:description" content="Live group navigation for people heading to the same destination.">
@@ -33,31 +32,61 @@
     <script src="https://unpkg.com/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.js"></script>
 </head>
 <body>
+
+    <!-- ===================== HOME PAGE ===================== -->
     <div id="homePage" class="page">
-        <div class="container">
-            <div class="brand-lockup">
-                <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-                    <path d="M4 12 L10.5 24 L16 10.5 L21.5 24 L28 12"
-                          stroke="currentColor" stroke-width="3"
-                          stroke-linecap="round" stroke-linejoin="round"/>
-                    <circle cx="16" cy="9.5" r="3.25" fill="currentColor"/>
-                </svg>
-                <h1 class="brand-name">Way<span class="brand-name-accent">sera</span></h1>
-                <p class="brand-tagline">Every journey, together.</p>
-                <p class="brand-description">Start a shared journey, invite your group, and see everyone move toward the same destination.</p>
-                <p class="brand-trust-line">No signup · Live location · Temporary journeys</p>
+
+        <!-- Hero -->
+        <div class="home-hero">
+            <!-- Decorative background mark -->
+            <svg class="home-hero-bg-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <path d="M4 12 L10.5 24 L16 10.5 L21.5 24 L28 12"
+                      stroke="white" stroke-width="3"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="16" cy="9.5" r="3.25" fill="white"/>
+            </svg>
+            <!-- Brand -->
+            <svg class="home-hero-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <path d="M4 12 L10.5 24 L16 10.5 L21.5 24 L28 12"
+                      stroke="white" stroke-width="3"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="16" cy="9.5" r="3.25" fill="white"/>
+            </svg>
+            <h1 class="home-hero-name">Waysera</h1>
+            <p class="home-hero-tagline">Every journey, together.</p>
+            <div class="home-hero-pills">
+                <span class="home-hero-pill">No signup</span>
+                <span class="home-hero-pill">Encrypted</span>
+                <span class="home-hero-pill">Temporary</span>
             </div>
-            <!-- CREATE ROOM SECTION -->
-            <div class="form-section">
-                <h2>Start a journey</h2>
-                
+        </div>
+
+        <!-- Body -->
+        <div class="home-body">
+
+            <!-- Tab switcher -->
+            <div class="tab-switcher" role="tablist" aria-label="Journey action">
+                <button class="tab-btn tab-active" id="tabStart"
+                        role="tab" aria-selected="true" aria-controls="panelStart"
+                        onclick="switchTab('start')">
+                    Start a journey
+                </button>
+                <button class="tab-btn" id="tabJoin"
+                        role="tab" aria-selected="false" aria-controls="panelJoin"
+                        onclick="switchTab('join')">
+                    Join
+                </button>
+            </div>
+
+            <!-- START PANEL -->
+            <div class="tab-panel form-section" id="panelStart" role="tabpanel">
                 <div class="form-group">
                     <label class="form-label" for="destName">Where are you going?</label>
                     <div class="search-box">
-                        <input 
-                            type="text" 
-                            id="destName" 
-                            class="form-control" 
+                        <input
+                            type="text"
+                            id="destName"
+                            class="form-control"
                             placeholder="Search for a destination"
                             autocomplete="off"
                         >
@@ -83,30 +112,42 @@
                     </div>
                 </details>
 
-                <div class="form-group">
-                    <label class="form-label" for="duration">Journey duration (minutes)</label>
-                    <input type="number" id="duration" class="form-control" placeholder="180" value="180" min="30" max="480">
-                </div>
+                <details class="coords-fallback">
+                    <summary>Journey duration</summary>
+                    <div class="form-group" style="margin-top: var(--space-3);">
+                        <label class="form-label" for="duration">Duration (minutes)</label>
+                        <input type="number" id="duration" class="form-control" placeholder="180" value="180" min="30" max="480">
+                    </div>
+                </details>
 
                 <button type="button" class="btn btn-primary btn-full" onclick="createJourney()">
-                    Start a journey
+                    Create journey
                 </button>
 
                 <div id="createResult" class="result" style="display: none;"></div>
             </div>
 
-            <!-- JOIN ROOM SECTION -->
-            <div class="form-section">
-                <h2>Join a journey</h2>
-
+            <!-- JOIN PANEL -->
+            <div class="tab-panel form-section" id="panelJoin" style="display: none;" role="tabpanel">
                 <div class="form-group">
                     <label class="form-label" for="joinName">Your name</label>
-                    <input type="text" id="joinName" class="form-control" placeholder="Your name">
+                    <input type="text" id="joinName" class="form-control"
+                           placeholder="Your name" autocomplete="name">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="roomCode">Journey code</label>
-                    <input type="text" id="roomCode" class="form-control" placeholder="ABC234" maxlength="6" autocapitalize="characters" autocomplete="off">
+                    <input
+                        type="text"
+                        id="roomCode"
+                        class="form-control code-input"
+                        placeholder="ABC234"
+                        maxlength="6"
+                        autocapitalize="characters"
+                        autocomplete="off"
+                        inputmode="text"
+                        spellcheck="false"
+                    >
                 </div>
 
                 <button type="button" class="btn btn-primary btn-full" onclick="joinJourney()">
@@ -116,22 +157,30 @@
                 <div id="joinResult" class="result" style="display: none;"></div>
             </div>
 
+            <!-- PAST JOURNEYS -->
             <div class="form-section" id="pastJourneysSection" style="display: none;">
                 <h2>Past journeys</h2>
-                <p class="brand-description" style="max-width: none; text-align: left;">
-                    Stored on this device only. Replays never leave it unless you export one.
-                </p>
+                <p class="section-hint">Stored on this device only. Replays never leave it unless you export one.</p>
                 <div id="pastJourneys" class="journey-list"></div>
             </div>
+
         </div>
     </div>
 
-    <!-- ROOM PAGE -->
+    <!-- ===================== ROOM PAGE ===================== -->
     <div id="roomPage" class="page" style="display: none;">
+
+        <!-- Header bar -->
         <div class="room-header">
             <div class="room-info">
                 <h1 id="destNameDisplay">Loading...</h1>
-                <p id="roomCodeDisplay" class="room-code">Journey code: …</p>
+                <button class="room-code-btn" onclick="copyJourneyCode()" title="Tap to copy code">
+                    <span id="roomCodeDisplay">Journey code: …</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2.2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2.2"/>
+                    </svg>
+                </button>
             </div>
             <div class="room-status">
                 <p id="timer" class="timer">…</p>
@@ -155,12 +204,12 @@
             </div>
         </div>
 
-        <div id="map" style="height: calc(100vh - 120px); width: 100%; position: relative;"></div>
+        <!-- Map -->
+        <div id="map"></div>
 
-        <!-- Futuristic Navigation Panel - Full Screen Mode -->
+        <!-- Navigation Panel (full screen, overlaid on map) -->
         <div id="navigationPanel" class="nav-panel" style="display: none;">
             <div class="nav-panel-content">
-                <!-- Top Section: Main Instruction -->
                 <div class="nav-instruction-container">
                     <div class="nav-icon-wrapper">
                         <svg id="navDirectionIcon" class="nav-direction-arrow" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -172,8 +221,7 @@
                         <div id="navInstructionDistance" class="nav-distance-next">Calculating route...</div>
                     </div>
                 </div>
-                
-                <!-- Bottom Section: Stats -->
+
                 <div class="nav-stats-container">
                     <div class="nav-stat">
                         <div class="nav-stat-label">Distance</div>
@@ -190,48 +238,54 @@
                         <div id="navSpeed" class="nav-stat-value">-</div>
                     </div>
                 </div>
-                
+
                 <button type="button" id="voiceToggle" class="nav-voice-btn"
                         onclick="toggleVoice()" aria-pressed="true">Voice on</button>
 
-                <!-- Exit Navigation Button -->
                 <button id="navExitBtn" class="nav-exit-btn" onclick="stopNavigation()">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
                     </svg>
                 </button>
             </div>
         </div>
 
+        <!-- Bottom sheet -->
         <div class="bottom-sheet">
             <div class="sheet-header" onclick="toggleBottomSheet()">
                 <h3>Your group</h3>
-                <span class="collapse-icon">▼</span>
+                <svg class="collapse-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
             </div>
             <div class="sheet-content">
                 <div id="ridersList" class="riders-list">
-                    <p>Waiting for your group to join…</p>
+                    <p class="group-empty">Waiting for your group to join…</p>
                 </div>
 
                 <div id="quickMessages" class="quick-messages" role="group" aria-label="Quick messages"></div>
 
                 <div class="action-buttons">
-                    <button class="btn btn-primary" onclick="startNavigation()" id="startNavBtn">
+                    <!-- Primary navigation action -->
+                    <button class="btn btn-primary btn-full" onclick="startNavigation()" id="startNavBtn">
                         Start navigation
                     </button>
-                    <button class="btn btn-danger" onclick="stopNavigation()" id="stopNavBtn" style="display: none;">
+                    <button class="btn btn-danger btn-full" onclick="stopNavigation()" id="stopNavBtn" style="display: none;">
                         Stop navigation
                     </button>
-                    <button class="btn btn-secondary" onclick="toggleDirections()" id="directionsBtn">
-                        Show directions
-                    </button>
-                    <button class="btn btn-secondary" onclick="copyJourneyCode()">
-                        Copy journey code
-                    </button>
-                    <button class="btn btn-secondary" onclick="shareCurrentInvite()">
-                        Share invite
-                    </button>
-                    <button class="btn btn-danger" onclick="leaveJourney()">
+
+                    <!-- Secondary actions row -->
+                    <div class="action-row">
+                        <button class="btn btn-secondary" onclick="shareCurrentInvite()">
+                            Share invite
+                        </button>
+                        <button class="btn btn-secondary" onclick="toggleDirections()" id="directionsBtn">
+                            Directions
+                        </button>
+                    </div>
+
+                    <!-- Danger zone -->
+                    <button class="btn btn-danger btn-full" onclick="leaveJourney()">
                         Leave journey
                     </button>
                 </div>

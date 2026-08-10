@@ -205,7 +205,9 @@ async function startJourney(code, name) {
     wireSession(session);
 
     document.getElementById('homePage').style.display = 'none';
-    document.getElementById('roomPage').style.display = 'block';
+    const roomEl = document.getElementById('roomPage');
+    roomEl.classList.add('room-active');
+    roomEl.style.display = 'block';
 
     WayseraValidate.setText(document.getElementById('roomCodeDisplay'), `Journey code: ${code}`);
     WayseraValidate.setText(
@@ -219,6 +221,8 @@ async function startJourney(code, name) {
     startRecording();
 
     if (currentRoom.destination) initializeMap();
+    // Let the fixed layout paint before Leaflet measures the container
+    setTimeout(() => { if (map) map.invalidateSize(); }, 120);
     await session.connect();
 
     startTimer();
@@ -1251,11 +1255,10 @@ function startNavigation() {
     const header = document.querySelector('.room-header');
     if (sheet) {
         sheet.style.transform = 'translateY(100%)';
-        sheet.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
     }
     if (header) {
         header.style.opacity = '0';
-        header.style.transition = 'opacity 0.3s';
+        header.style.pointerEvents = 'none';
     }
     
     // Create navigation route
@@ -1296,14 +1299,15 @@ function stopNavigation() {
     }
     navigationRoute = null;
     
-    // Show bottom sheet and header again
+    // Restore bottom sheet and header
     const sheet = document.querySelector('.bottom-sheet');
     const header = document.querySelector('.room-header');
     if (sheet) {
-        sheet.style.transform = 'translateY(0)';
+        sheet.style.transform = '';  // let CSS class control peek vs expanded
     }
     if (header) {
         header.style.opacity = '1';
+        header.style.pointerEvents = '';
     }
     
     // Reset map view
@@ -1773,14 +1777,10 @@ function leaveJourney() {
 }
 
 function toggleBottomSheet() {
-    const content = document.querySelector('.sheet-content');
-    const icon = document.querySelector('.collapse-icon');
-    
-    if (content && icon) {
-        const isHidden = content.style.display === 'none';
-        content.style.display = isHidden ? 'block' : 'none';
-        icon.style.transform = isHidden ? 'none' : 'rotate(180deg)';
-    }
+    // On desktop the panel is always open — nothing to toggle
+    if (window.matchMedia('(min-width: 769px)').matches) return;
+    const sheet = document.querySelector('.bottom-sheet');
+    if (sheet) sheet.classList.toggle('expanded');
 }
 
 // ============= PAGE INITIALISATION =============
@@ -1828,6 +1828,7 @@ async function enterFromInvite(invite) {
 
     document.getElementById('roomCode').value = invite.code;
     prefillName();
+    switchTab('join');
 
     const name = recallName();
     if (name) {
@@ -1973,6 +1974,26 @@ function requestLocationPermission() {
 
 window.requestLocationPermission = requestLocationPermission;
 window.dismissLocationBanner = dismissLocationBanner;
+
+// ============= TAB SWITCHER =============
+
+function switchTab(tab) {
+    const panelStart = document.getElementById('panelStart');
+    const panelJoin  = document.getElementById('panelJoin');
+    const tabStart   = document.getElementById('tabStart');
+    const tabJoin    = document.getElementById('tabJoin');
+    if (!panelStart || !panelJoin) return;
+
+    const isStart = tab === 'start';
+    panelStart.style.display = isStart ? '' : 'none';
+    panelJoin.style.display  = isStart ? 'none' : '';
+    tabStart.classList.toggle('tab-active', isStart);
+    tabJoin.classList.toggle('tab-active', !isStart);
+    tabStart.setAttribute('aria-selected', isStart ? 'true' : 'false');
+    tabJoin.setAttribute('aria-selected', isStart ? 'false' : 'true');
+}
+
+window.switchTab = switchTab;
 
 // Tell peers we are going rather than making them wait for the roster timeout.
 window.addEventListener('pagehide', () => {
