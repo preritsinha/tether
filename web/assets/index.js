@@ -741,6 +741,7 @@ function publishPosition(coords) {
     if (session) session.sendPosition(position);
     if (map) updateUserLocationMarker(lastKnownLocation, 'live');
     recordPosition(currentMemberId, { ...position, ts: Date.now() });
+    rememberSearchOrigin(position);
 
     if (first) updateNavigationButtonState();
     if (navigationActive) updateNavigationProgressThrottled();
@@ -851,6 +852,21 @@ function recordEvent(kind, data) {
     // Fire and forget: a failed local write must never interrupt a journey.
     WayseraStore.appendEvent(currentRoom.room_id, { ts: Date.now(), kind, data })
         .catch((error) => console.warn('waysera: could not record event', error));
+}
+
+// Keeps destination search biased toward wherever you were last, so the first
+// search on a later visit ranks nearby places first without asking permission
+// up front. Throttled hard because it is a hint, not a position log.
+const SEARCH_ORIGIN_INTERVAL_MS = 60000;
+let lastSearchOriginSavedAt = 0;
+
+function rememberSearchOrigin(position) {
+    const now = Date.now();
+    if (now - lastSearchOriginSavedAt < SEARCH_ORIGIN_INTERVAL_MS) return;
+    lastSearchOriginSavedAt = now;
+    if (window.WayseraSearch) {
+        WayseraSearch.rememberPosition(position.lat, position.lng);
+    }
 }
 
 // -------------------------------------------------------- peer arrivals

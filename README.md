@@ -40,7 +40,7 @@ Waysera cannot see your journey. That is not the same as your location never lea
 | Service | What it receives |
 | --- | --- |
 | Mapbox | Tile requests, revealing the area you are looking at |
-| Nominatim | Every destination search |
+| Photon (Komoot) | Every destination search |
 | openstreetmap.de | Origin **and** destination for every route |
 
 Replacing these with self-hosted equivalents is on the roadmap, not in the product today.

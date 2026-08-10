@@ -1981,3 +1981,140 @@ a,
 .nav-voice-btn[aria-pressed="false"] {
   opacity: 0.6;
 }
+
+/* ============= Destination search ============= */
+
+.search-box {
+  position: relative;
+  width: 100%;
+}
+
+.search-suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: none;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.search-suggestions.show {
+  display: block;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 11px var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+/* Hover and keyboard selection share one treatment, so moving between mouse
+   and arrow keys does not change what "selected" looks like. */
+.suggestion-item:hover,
+.suggestion-item.is-active {
+  background: var(--bg-tertiary);
+}
+
+.suggestion-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.suggestion-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestion-coords {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestion-distance {
+  flex-shrink: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--waysera-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.suggestion-status {
+  padding: 14px var(--space-4);
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
+
+.coords-display {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--waysera-secondary);
+  margin-top: var(--space-2);
+  padding: 8px 12px;
+  background: rgba(20, 184, 166, 0.1);
+  border-radius: var(--radius-sm);
+}
+
+.search-near {
+  margin-top: var(--space-2);
+  padding: 7px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--waysera-primary);
+  font-family: var(--font-family);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.search-near:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Coordinates are a fallback for places a geocoder cannot find, so they are
+   folded away rather than sitting in front of everyone by default. */
+.coords-fallback {
+  margin-bottom: var(--space-4);
+}
+
+.coords-fallback > summary {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: var(--space-2) 0;
+  list-style: none;
+}
+
+.coords-fallback > summary::-webkit-details-marker {
+  display: none;
+}
+
+.coords-fallback > summary::before {
+  content: '+ ';
+}
+
+.coords-fallback[open] > summary::before {
+  content: '– ';
+}

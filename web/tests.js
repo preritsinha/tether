@@ -1017,6 +1017,109 @@
     });
 
     // =====================================================================
+    // destination search
+    // =====================================================================
+
+    const Q = () => window.WayseraSearch;
+
+    function feature(properties, lon = 72.8, lat = 19.0) {
+        return { properties, geometry: { coordinates: [lon, lat] } };
+    }
+
+    test('a named place puts its name first and address second', () => {
+        const r = Q().formatResult(feature({
+            name: 'Gateway of India', street: 'Apollo Bandar',
+            city: 'Mumbai', state: 'Maharashtra', country: 'India',
+            osm_value: 'attraction'
+        }));
+        assertEqual(r.primary, 'Gateway of India');
+        assertEqual(r.category, 'Attraction');
+        assert(r.secondary.includes('Mumbai'), 'city belongs in the second line');
+        assert(r.secondary.startsWith('Apollo Bandar'), 'street leads the context');
+    });
+
+    test('an address with no name falls back to the street line', () => {
+        const r = Q().formatResult(feature({
+            housenumber: '221B', street: 'Baker Street', city: 'London', country: 'UK'
+        }));
+        assertEqual(r.primary, '221B Baker Street');
+        assert(!r.secondary.includes('Baker Street'), 'street must not repeat');
+        assert(r.secondary.includes('London'));
+    });
+
+    test('context never repeats the primary line', () => {
+        const r = Q().formatResult(feature({
+            name: 'Mumbai', city: 'Mumbai', state: 'Maharashtra', country: 'India'
+        }));
+        assertEqual(r.primary, 'Mumbai');
+        assert(!r.secondary.split(', ').includes('Mumbai'), 'no echo of the name');
+    });
+
+    test('coordinates come back as lat/lng, not GeoJSON order', () => {
+        // Photon returns [lon, lat]. Getting this backwards puts every
+        // destination in the wrong hemisphere.
+        const r = Q().formatResult(feature({ name: 'X' }, 72.8777, 19.076));
+        assertEqual(r.lat, 19.076);
+        assertEqual(r.lng, 72.8777);
+    });
+
+    test('a place with nothing usable still renders', () => {
+        const r = Q().formatResult(feature({}));
+        assertEqual(r.primary, 'Unnamed place');
+        assertEqual(r.secondary, '');
+    });
+
+    test('unmapped categories are made readable rather than dropped', () => {
+        assertEqual(Q().categoryFor({ osm_value: 'fuel' }), 'Petrol station');
+        assertEqual(Q().categoryFor({ osm_value: 'ice_cream' }), 'Ice cream');
+        assertEqual(Q().categoryFor({}), '');
+    });
+
+    test('distance reads sensibly at every scale', () => {
+        assertEqual(Q().distanceLabel(0.4), '400 m');
+        assertEqual(Q().distanceLabel(2.34), '2.3 km');
+        assertEqual(Q().distanceLabel(47.6), '48 km');
+        assertEqual(Q().distanceLabel(null), '');
+        assertEqual(Q().distanceLabel(NaN), '');
+    });
+
+    test('a search near somewhere sends the bias parameters', () => {
+        const url = Q().buildUrl('station', { lat: 19.076, lng: 72.8777 });
+        const params = new URLSearchParams(url.split('?')[1]);
+        assertEqual(params.get('q'), 'station');
+        assertEqual(params.get('lat'), '19.076');
+        assertEqual(params.get('lon'), '72.8777', 'Photon wants lon, not lng');
+        assert(params.get('location_bias_scale'), 'bias strength must be set');
+    });
+
+    test('a search with no known position omits them entirely', () => {
+        const params = new URLSearchParams(Q().buildUrl('station', null).split('?')[1]);
+        assertNull(params.get('lat'));
+        assertNull(params.get('lon'));
+    });
+
+    test('the remembered position round-trips and can be cleared', () => {
+        Q().forgetPosition();
+        assertNull(Q().recallPosition());
+
+        Q().rememberPosition(19.076, 72.8777);
+        const back = Q().recallPosition();
+        assertEqual(back.lat, 19.076);
+        assertEqual(back.lng, 72.8777);
+
+        Q().forgetPosition();
+        assertNull(Q().recallPosition());
+    });
+
+    test('a corrupt remembered position is ignored, not thrown on', () => {
+        localStorage.setItem('waysera.lastPosition', 'not json at all');
+        assertNull(Q().recallPosition());
+        localStorage.setItem('waysera.lastPosition', '{"lat":"x","lng":null}');
+        assertNull(Q().recallPosition());
+        Q().forgetPosition();
+    });
+
+    // =====================================================================
     // runner
     // =====================================================================
 

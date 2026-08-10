@@ -223,7 +223,7 @@ This is **not** true, and must never be written:
 
 > ~~Your location never leaves your device.~~
 
-The client still contacts third parties that receive location data: **Mapbox** (map tiles), **Nominatim** (destination search), and **openstreetmap.de** (routing — origin *and* destination). Any privacy copy must stay within what the architecture actually delivers.
+The client still contacts third parties that receive location data: **Mapbox** (map tiles), **Photon** (destination search, including a rough position used to rank nearby results first), and **openstreetmap.de** (routing, which sees origin *and* destination). Any privacy copy must stay within what the architecture actually delivers.
 
 Describe encryption factually, and only once it ships. Planned capability is not present capability.
 
