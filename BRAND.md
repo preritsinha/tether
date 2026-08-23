@@ -127,7 +127,7 @@ Use the gradient only for: the brand mark, small hero accents, navigation highli
 
 **Concept: multiple paths, one destination.**
 
-Two route lines rise from separate origins and converge on a single destination point. The silhouette subtly suggests a **W**. Strokes are rounded, the motion reads forward and upward.
+Three routes leave separate origins and converge on a single destination point. The three origin dots read as people; the weighted terminal dot reads as the shared arrival. Strokes are rounded, and the outer two curve inward so the convergence is legible rather than implied.
 
 The mark must:
 
@@ -139,6 +139,8 @@ The mark must:
 Avoid: a plain map pin, a chain link or tether, a car, a steering wheel, a stock compass, or detail that collapses at small sizes.
 
 **Usage.** In HTML, compose the lockup from the SVG mark plus real text, so the wordmark stays crisp, selectable, and searchable. Use `waysera-lockup.svg` only where a single self-contained file is required (README, social previews).
+
+The Android app does not ship these files. A WebView renders no favicon and reads no web manifest, so the launcher icon is an Android adaptive icon built from vector drawables in `android_app/android/app/src/main/res/`. Changing the mark means updating both.
 
 Decorative instances take `aria-hidden="true"`. Instances that carry meaning take an accessible label.
 
@@ -201,7 +203,9 @@ Journey page: "Journey code: ABC123" · "Ends in 2h 14m" · "4 people" · "Your 
 
 Arrival: "You've arrived." · "Alex has arrived." · "Everyone has arrived."
 
-Location permission: "Share your location for this journey" / "Location access lets your group see where you are while the journey is active." / **Enable Location** · **Use Demo Mode**
+Location permission: "Share your location for this journey" / "Location access lets your group see where you are while the journey is active." / **Enable Location** · **Not now**
+
+Declining shares nothing and invents nothing. The app never fabricates a position: if location is unavailable, say so plainly — "Location is off, so your group cannot see where you are." A believable fake position is worse than a blank one, because the group acts on it.
 
 ## 15. Claims we do not make
 
@@ -239,14 +243,19 @@ Brand indigo holds up in both. Verify contrast wherever brand colour meets text,
 ## 17. Assets
 
 ```
-web/assets/brand/
+web/frontend/assets/brand/
 ├── waysera-mark.svg       # symbol only, currentColor, any size
 ├── waysera-lockup.svg     # mark + wordmark, self-contained
 ├── favicon.svg            # gradient tile, legible at 16px
 └── waysera-app-icon.svg   # 512×512 rounded square, no text
+
+android_app/android/app/src/main/res/
+├── drawable/ic_launcher_foreground.xml   # the mark, 108dp, 72dp safe zone
+├── drawable/ic_launcher_background.xml   # brand gradient
+└── mipmap-anydpi-v26/ic_launcher.xml     # adaptive icon, incl. monochrome
 ```
 
-Raster exports (180×180 Apple touch, 192×192 and 512×512 PWA) are **still outstanding** — they need image tooling not available in this environment. Placeholder PNGs must never be committed; export from `waysera-app-icon.svg` and reference them from `web/manifest.webmanifest` once real files exist.
+Raster exports (180×180 Apple touch, 192×192 and 512×512 PWA) are **still outstanding** — they need image tooling not available in this environment. Placeholder PNGs must never be committed; export from `waysera-app-icon.svg` and reference them from `web/frontend/manifest.webmanifest` once real files exist.
 
 ---
 

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- No https deep-link filter here on purpose.
+                 One was declared with autoVerify, but nothing consumed the
+                 incoming URL: there is no App.addListener('appUrlOpen') or
+                 getLaunchUrl() handler, so a tapped invite opened the app on a
+                 blank home screen and the journey was silently dropped. Android
+                 12+ also refuses to verify the link without a published
+                 assetlinks.json, which this project does not have. Re-add the
+                 filter together with a handler and that file, not before. -->
+
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+    </application>
+
+    <!-- Permissions -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Location. COARSE is requested alongside FINE because Android 12+ lets
+         the user grant only approximate location; the app still works, just
+         with a rougher position. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Keeps position flowing while the phone is pocketed or on another app,
+         which is the whole reason for shipping natively rather than as a PWA.
+         Android requires a visible ongoing notification to hold this. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+    <!-- Android 13+ requires an explicit grant before any notification shows,
+         including the foreground-service one above. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Screen stays awake during turn-by-turn navigation. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- GPS is expected but not required: the app degrades to network location
+         rather than being hidden from devices without a GPS radio. -->
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+</manifest>

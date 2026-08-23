@@ -1,0 +1,4185 @@
+/* ============= Waysera Design System ============= */
+/* Tokens are documented in BRAND.md, which is the source of truth. */
+
+:root {
+  /* Brand */
+  --waysera-primary: #4F46E5;
+  --waysera-primary-strong: #4338CA;
+  --waysera-secondary: #0F766E;
+  --waysera-accent: #14B8A6;
+  --waysera-sky: #0EA5E9;
+  --waysera-ink: #0F172A;
+  --waysera-muted: #64748B;
+  --waysera-canvas: #F8FAFC;
+  --waysera-surface: #FFFFFF;
+  --waysera-dark: #0B1120;
+  --waysera-dark-surface: #111827;
+
+  --waysera-gradient: linear-gradient(135deg, #4F46E5 0%, #0EA5E9 55%, #14B8A6 100%);
+
+  /* Status colours stay semantic and independent of the brand palette.
+     Never recolour these for visual consistency. */
+  --status-success: #34C759;
+  --status-warning: #FF9500;
+  --status-danger: #FF3B30;
+
+  /* Surfaces */
+  --bg-primary: var(--waysera-canvas);
+  --bg-secondary: var(--waysera-surface);
+  --bg-tertiary: #F1F5F9;
+  --border-subtle: #E2E8F0;
+
+  /* Text */
+  --text-primary: var(--waysera-ink);
+  --text-secondary: #334155;
+  --text-tertiary: var(--waysera-muted);
+
+  /* Legacy aliases. Retained so existing rules inherit the brand without a
+     sweeping rewrite. New CSS must use the semantic Waysera names above. */
+  --ios-blue: var(--waysera-primary);
+  --ios-blue-dark: var(--waysera-primary-strong);
+  --ios-red: var(--status-danger);
+  --ios-green: var(--status-success);
+  --ios-orange: var(--status-warning);
+  --ios-yellow: #FFCC00;
+  --ios-gray: var(--waysera-muted);
+  --ios-gray-light: #CBD5E1;
+  --ios-gray-lighter: var(--border-subtle);
+
+  /* System font stack. No downloaded fonts, no build step. */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  
+  /* Spacing (iOS 8-point grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  
+  /* Border radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.15);
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark mode. The legacy aliases resolve lazily, so redefining the semantic
+   tokens here is enough; they follow automatically. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: var(--waysera-dark);
+    --bg-secondary: var(--waysera-dark-surface);
+    --bg-tertiary: #1E293B;
+    --border-subtle: #1F2937;
+    --text-primary: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-tertiary: #94A3B8;
+    --ios-gray-light: #475569;
+  }
+}
+
+/* Animation is decorative and always optional. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============= Brand lockup ============= */
+
+.brand-lockup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+.brand-mark {
+  display: block;
+  width: 44px;
+  height: 44px;
+  color: var(--waysera-primary);
+}
+
+.brand-name {
+  font-size: 34px;
+  font-weight: 780;
+  letter-spacing: -0.8px;
+  line-height: 1.1;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.brand-name .brand-name-accent {
+  color: var(--waysera-primary);
+}
+
+.brand-tagline {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  margin: 0;
+}
+
+.brand-description {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+  text-align: center;
+  max-width: 34ch;
+  margin: 0;
+}
+
+.brand-trust-line {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-align: center;
+  margin-top: var(--space-1);
+}
+
+/* Accessible focus, applied consistently rather than per-control */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--waysera-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ============= Location permission banner ============= */
+/* Previously inline styles on the element; lifted here so the banner picks up
+   brand tokens and dark mode like everything else. */
+
+.location-banner {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 250;
+  width: calc(100% - 32px);
+  max-width: 420px;
+}
+
+.location-banner-card {
+  background: var(--waysera-gradient);
+  color: #FFFFFF;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.location-banner-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+.location-banner-body {
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0.92;
+  margin-bottom: var(--space-3);
+}
+
+.location-banner-actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.location-banner-actions .btn-banner-primary {
+  background: var(--waysera-surface);
+  color: var(--waysera-primary);
+  border: none;
+  padding: 10px 24px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.location-banner-actions .btn-banner-secondary {
+  background: transparent;
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  padding: 10px 24px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* ============= Base Styles ============= */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+  overflow-x: hidden;
+  /* Safe area support */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  /* Prevent overscroll */
+  overscroll-behavior-y: none;
+  /* Note: transform removed — it broke position:fixed on the map page.
+     GPU acceleration is applied individually to Leaflet elements below. */
+}
+
+/* ============= Home Page ============= */
+
+#homePage {
+  min-height: 100vh;
+  padding: var(--space-6) var(--space-4);
+  padding-bottom: var(--space-8);
+}
+
+#homePage .container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* The home heading and subtitle are now the .brand-lockup block defined above.
+   The old #homePage h1 / .subtitle rules were removed rather than left in
+   place, because an ID selector outranks .brand-name and would have silently
+   overridden the wordmark's weight and spacing. */
+
+/* Form sections - iOS card style */
+.form-section {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  border: 0.5px solid var(--ios-gray-lighter);
+}
+
+.form-section h2 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  margin-bottom: var(--space-5);
+  color: var(--text-primary);
+}
+
+/* Form elements - iOS style */
+.form-group {
+  margin-bottom: var(--space-4);
+}
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.form-control {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-size: 17px;
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 0.5px solid var(--ios-gray-lighter);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--ios-blue);
+  background: var(--bg-secondary);
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+}
+
+.form-control::placeholder {
+  color: var(--ios-gray);
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+/* Buttons - iOS style */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3) var(--space-5);
+  font-size: 17px;
+  font-weight: 600;
+  font-family: var(--font-family);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  -webkit-user-select: none;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+.btn-primary {
+  background: var(--ios-blue);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+}
+
+.btn-primary:active {
+  background: var(--ios-blue-dark);
+}
+
+.btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--ios-blue);
+  border: 0.5px solid var(--ios-gray-lighter);
+}
+
+.btn-secondary:active {
+  background: var(--ios-gray-lighter);
+}
+
+.btn-danger {
+  background: var(--ios-red);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3);
+}
+
+.btn-danger:active {
+  background: #D42C21;
+}
+
+.btn-full {
+  width: 100%;
+  margin-top: var(--space-3);
+}
+
+/* Results/Messages - iOS alert style */
+.result {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  display: none;
+  animation: slideIn 0.3s ease-out;
+}
+
+.result.success {
+  display: block;
+  background: rgba(52, 199, 89, 0.1);
+  color: var(--ios-green);
+  border: 1px solid rgba(52, 199, 89, 0.3);
+}
+
+.result.error {
+  display: block;
+  background: rgba(255, 59, 48, 0.1);
+  color: var(--ios-red);
+  border: 1px solid rgba(255, 59, 48, 0.3);
+}
+
+/* ============= Room Page ============= */
+
+#roomPage {
+  width: 100%;
+  height: 100vh;
+  height: -webkit-fill-available;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Room header - iOS navigation bar style */
+.room-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 52px;
+  position: relative;
+}
+
+@media (prefers-color-scheme: dark) {
+  .room-header {
+    background: rgba(28, 28, 30, 0.95);
+    box-shadow: 0 0.5px 0 rgba(255, 255, 255, 0.1);
+  }
+}
+
+.room-info h1 {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+
+.room-code {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  margin-top: 2px;
+}
+
+.room-status {
+  text-align: right;
+}
+
+.timer {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--status-success);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  background: rgba(52, 199, 89, 0.12);
+  padding: 2px 8px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.member-count {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* Map - smoother rendering with proper z-index */
+#map {
+  flex: 1;
+  z-index: 1;  /* Below navigation overlay (500) */
+  touch-action: none;
+  width: 100%;
+  height: 100%;
+  background: #f5f5f5;
+  position: relative;
+}
+
+/* Ensure map is visible during navigation */
+#roomPage #map {
+  z-index: 1 !important;
+}
+
+/* Leaflet overrides for smoother iOS experience */
+.leaflet-container {
+  font-family: var(--font-family);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: var(--shadow-md) !important;
+  border-radius: var(--radius-sm) !important;
+  overflow: hidden;
+}
+
+.leaflet-control-zoom a {
+  background: var(--bg-secondary) !important;
+  color: var(--ios-blue) !important;
+  border: none !important;
+  width: 40px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  font-size: 24px !important;
+  transition: background var(--transition-fast) !important;
+}
+
+.leaflet-control-zoom a:active {
+  background: var(--ios-gray-lighter) !important;
+}
+
+.leaflet-control-zoom a:first-child {
+  border-bottom: 0.5px solid var(--ios-gray-lighter) !important;
+}
+
+.leaflet-touch .leaflet-control-zoom-in,
+.leaflet-touch .leaflet-control-zoom-out {
+  font-size: 24px !important;
+}
+
+/* Bottom sheet - iOS style */
+.bottom-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--transition-slow);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (prefers-color-scheme: dark) {
+  .bottom-sheet {
+    background: rgba(28, 28, 30, 0.95);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.sheet-header {
+  padding: var(--space-4);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  -webkit-user-select: none;
+  user-select: none;
+  position: relative;
+}
+
+/* iOS handle indicator — only used on desktop (mobile has .sheet-drag-pill) */
+@media (min-width: 769px) {
+  .sheet-header::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    background: var(--ios-gray-light);
+    border-radius: 2px;
+  }
+}
+
+.sheet-header h3 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  margin: 0;
+  padding-top: 12px;
+}
+
+.collapse-icon {
+  font-size: 20px;
+  color: var(--ios-gray);
+  transition: transform var(--transition-normal);
+  padding-top: 12px;
+}
+
+.bottom-sheet.collapsed .collapse-icon {
+  transform: rotate(180deg);
+}
+
+.sheet-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 var(--space-4) var(--space-4);
+  -webkit-overflow-scrolling: touch;
+}
+
+.sheet-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sheet-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sheet-content::-webkit-scrollbar-thumb {
+  background: var(--ios-gray-light);
+  border-radius: 3px;
+}
+
+/* Riders list */
+.riders-list {
+  margin-bottom: var(--space-4);
+}
+
+.rider-item {
+  padding: var(--space-3);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+  border-left: 3px solid var(--ios-blue);
+  transition: background var(--transition-fast);
+}
+
+.rider-item:active {
+  background: var(--ios-gray-lighter);
+}
+
+.rider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.rider-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rider-status {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.rider-status.live {
+  background: rgba(52, 199, 89, 0.15);
+  color: var(--ios-green);
+}
+
+.rider-status.stale {
+  background: rgba(255, 149, 0, 0.15);
+  color: var(--ios-orange);
+}
+
+.rider-status.offline {
+  background: var(--ios-gray-lighter);
+  color: var(--ios-gray);
+}
+
+.rider-details {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+/* Action buttons */
+.action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+}
+
+.action-buttons .btn {
+  font-size: 15px;
+  padding: var(--space-3);
+}
+
+.action-buttons .btn-danger {
+  grid-column: 1 / -1;
+}
+
+/* ============= Mobile Optimizations ============= */
+
+@media (max-width: 640px) {
+  :root {
+    font-size: 15px;
+  }
+
+  #homePage {
+    padding: var(--space-4) var(--space-3);
+  }
+
+  #homePage h1 {
+    font-size: 28px;
+  }
+
+  .form-section {
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+  }
+
+  .form-section h2 {
+    font-size: 20px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .room-info h1 {
+    font-size: 15px;
+    max-width: 140px;
+  }
+
+  .action-buttons {
+    grid-template-columns: 1fr;
+  }
+  
+  .action-buttons .btn-danger {
+    grid-column: 1;
+  }
+}
+
+/* iPhone X and newer - safe area handling */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+  
+  .bottom-sheet {
+    padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
+  }
+}
+
+/* Smooth animations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============= PERFORMANCE OPTIMIZATIONS (60fps target) ============= */
+
+/* Hardware acceleration for all moving elements */
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-interactive {
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-perspective: 1000;
+  perspective: 1000;
+  will-change: transform;
+}
+
+/* Smooth route line rendering */
+.leaflet-routing-container,
+.leaflet-routing-alt {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Enable GPU acceleration for map container */
+#map {
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Mapbox tile optimization for crisp rendering */
+.leaflet-tile {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  image-rendering: -webkit-optimize-contrast;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Ensure sharp rendering on all displays */
+.leaflet-tile-container {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Map container styling */
+.leaflet-container {
+  background: #f5f5f5 !important;
+  font-family: var(--font-family);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.leaflet-pane {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Smooth scrolling and interactions */
+.leaflet-container {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+}
+
+/* Reduce repaints during animations */
+@media (prefers-reduced-motion: no-preference) {
+  .nav-panel,
+  .nav-panel-content,
+  .nav-instruction-container,
+  .nav-stats-container {
+    contain: layout style paint;
+  }
+}
+
+/* Hide routing instructions panel */
+.leaflet-routing-container {
+  display: none !important;
+}
+
+.leaflet-routing-alt {
+  display: none !important;
+}
+
+/* ============= FUTURISTIC NAVIGATION UI ============= */
+
+/* Full-screen Navigation Panel - NO BLUR on panel itself */
+.nav-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 500;  /* Lower than map controls but above normal content */
+  background: linear-gradient(180deg, 
+    rgba(0, 0, 0, 0.5) 0%, 
+    rgba(0, 0, 0, 0.3) 30%,
+    rgba(0, 0, 0, 0.1) 60%,
+    rgba(0, 0, 0, 0) 100%);  /* Very transparent - let map shine through */
+  /* NO backdrop-filter here - this was blurring the map! */
+  pointer-events: none;
+  animation: navFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Hardware acceleration */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: opacity, transform;
+}
+
+@keyframes navFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.nav-panel-content {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top, 20px) 20px 20px 20px;
+  pointer-events: none;  /* Allow map interaction through this container */
+}
+
+/* Main Instruction Container */
+.nav-instruction-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.95);  /* Match bottom stats container */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: navPulse 2s ease-in-out infinite;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  pointer-events: none;  /* Allow map interaction through instruction card */
+  /* NO backdrop-filter - this was blurring the map behind! */
+}
+
+@keyframes navPulse {
+  0%, 100% {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 0 0 0 rgba(26, 115, 232, 0);
+  }
+  50% {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 0 0 8px rgba(26, 115, 232, 0.2);
+  }
+}
+
+.nav-icon-wrapper {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1A73E8 0%, #34A853 100%);
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(26, 115, 232, 0.4);
+  animation: navIconFloat 3s ease-in-out infinite;
+}
+
+@keyframes navIconFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.nav-direction-arrow {
+  width: 48px;
+  height: 48px;
+  color: #FFFFFF;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-text-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.nav-instruction {
+  font-size: 22px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 8px;
+  line-height: 1.3;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  letter-spacing: -0.3px;
+}
+
+.nav-distance-next {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Lane Guidance */
+.lane-guidance {
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.9);  /* More opaque, no blur needed */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  margin-bottom: 16px;
+  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;  /* Allow map interaction through lane guidance */
+  /* NO backdrop-filter - prevents map blur */
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lane-arrows {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.lane-arrow {
+  width: 40px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lane-arrow.active {
+  background: linear-gradient(135deg, #1A73E8 0%, #34A853 100%);
+  border-color: #FFFFFF;
+  box-shadow: 0 0 16px rgba(26, 115, 232, 0.6);
+  transform: scale(1.1);
+}
+
+.lane-arrow svg {
+  width: 24px;
+  height: 24px;
+  color: rgba(255, 255, 255, 0.6);
+  transition: color 0.3s;
+}
+
+.lane-arrow.active svg {
+  color: #FFFFFF;
+}
+
+/* Stats Container */
+.nav-stats-container {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.95);  /* Very opaque - no blur needed */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  margin-top: auto;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  pointer-events: none;  /* Allow map interaction through stats panel */
+  /* NO backdrop-filter - this was blurring the map behind! */
+}
+
+.nav-stat {
+  flex: 1;
+  text-align: center;
+  padding: 8px;
+}
+
+.nav-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.nav-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #FFFFFF;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  letter-spacing: -0.5px;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-stat-value.updating {
+  animation: statUpdate 0.3s ease-out;
+}
+
+@keyframes statUpdate {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.nav-stat-divider {
+  width: 1px;
+  background: linear-gradient(to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%);
+  margin: 0 4px;
+}
+
+/* Exit button: sits inline inside the instruction card (right edge) */
+.nav-exit-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #FFFFFF;
+  transition: background 0.15s ease;
+  pointer-events: auto;
+  margin-left: 8px;
+}
+
+.nav-exit-btn:active {
+  background: rgba(255, 59, 48, 0.75);
+}
+
+/* Hide room header and bottom sheet in navigation mode */
+.nav-panel ~ * .room-header {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.nav-panel ~ * .bottom-sheet {
+  transform: translateY(100%) !important;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Arrival notification animation */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 640px) {
+  .nav-instruction-container {
+    padding: 20px;
+    gap: 16px;
+  }
+  
+  .nav-icon-wrapper {
+    width: 64px;
+    height: 64px;
+  }
+  
+  .nav-direction-arrow {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .nav-instruction {
+    font-size: 18px;
+  }
+  
+  .nav-distance-next {
+    font-size: 14px;
+  }
+  
+  .nav-stat-value {
+    font-size: 20px;
+  }
+  
+  .nav-stats-container {
+    padding: 16px 12px;
+  }
+}
+
+/* Direction arrow types */
+.arrow-straight {
+  animation: arrowBounce 1.5s ease-in-out infinite;
+}
+
+@keyframes arrowBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.arrow-turn {
+  animation: arrowTurn 0.8s ease-in-out;
+}
+
+@keyframes arrowTurn {
+  0% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(10deg) scale(1.1);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+/* ============= ENHANCED MOBILE TOUCH INTERACTIONS ============= */
+
+/* Improve touch target sizes (minimum 44x44px for iOS) */
+.btn,
+.nav-exit-btn,
+.lane-arrow,
+.suggestion-item {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Remove default mobile tap highlighting */
+button,
+a,
+.clickable {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Improve button press feedback */
+.btn,
+.nav-exit-btn {
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1),
+              background 0.2s ease,
+              box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.btn:active,
+.nav-exit-btn:active {
+  transform: scale(0.95);
+  transition-duration: 0.05s;
+}
+
+/* Prevent text selection during interactions */
+.nav-panel,
+.bottom-sheet,
+.room-header {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Smooth dragging on map */
+.leaflet-container {
+  -webkit-user-drag: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.leaflet-dragging .leaflet-container {
+  cursor: move;
+  cursor: grab;
+  cursor: -webkit-grab;
+}
+
+.leaflet-dragging .leaflet-container:active {
+  cursor: grabbing;
+  cursor: -webkit-grabbing;
+}
+
+/* Improve zoom control touch targets */
+.leaflet-control-zoom a {
+  touch-action: manipulation;
+  min-width: 44px !important;
+  min-height: 44px !important;
+}
+
+/* Optimize bottom sheet drag performance */
+.bottom-sheet {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Smoother sheet content scrolling */
+.sheet-content {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+}
+
+/* Add momentum to scrollable areas */
+.riders-list,
+.sheet-content,
+.search-suggestions {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .nav-instruction-container,
+  .nav-stats-container,
+  .lane-guidance {
+    border-width: 2px;
+  }
+  
+  .nav-direction-arrow {
+    stroke-width: 10;
+  }
+}
+
+/* Landscape orientation optimizations */
+@media (orientation: landscape) and (max-height: 500px) {
+  .nav-instruction-container {
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  
+  .nav-icon-wrapper {
+    width: 56px;
+    height: 56px;
+  }
+  
+  .nav-direction-arrow {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .nav-instruction {
+    font-size: 16px;
+  }
+  
+  .nav-stats-container {
+    padding: 12px 16px;
+  }
+  
+  .nav-stat-value {
+    font-size: 18px;
+  }
+}
+
+/* PWA fullscreen mode support */
+@media (display-mode: standalone) {
+  body {
+    /* Additional spacing for notch/safe areas in PWA mode */
+    padding-top: max(env(safe-area-inset-top), 20px);
+  }
+  
+  .nav-panel-content {
+    padding-top: max(env(safe-area-inset-top, 20px), 20px);
+  }
+}
+
+/* Dark mode enhancements for navigation */
+@media (prefers-color-scheme: dark) {
+  .nav-instruction-container {
+    background: linear-gradient(56deg, 
+      rgba(0, 0, 0, 0.7) 50%, 
+      rgba(0, 0, 0, 0.7) 50%);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+  
+  .nav-stats-container {
+    background: rgba(0, 0, 0, 0.85);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .lane-guidance {
+    background: rgba(0, 0, 0, 0.75);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* Loading states */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.loading {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Touch feedback */
+.btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
+
+.btn:active::after {
+  width: 200px;
+  height: 200px;
+}
+
+/* ============= USER LOCATION MARKER ============= */
+
+.user-location-marker {
+  background: none !important;
+  border: none !important;
+  /* Hardware acceleration */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.user-location-marker svg {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+  animation: locationPulse 2s ease-in-out infinite;
+}
+
+@keyframes locationPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+/* ============= SMOOTH ROUTE RENDERING ============= */
+
+.leaflet-routing-container {
+  display: none !important;
+}
+
+.leaflet-routing-alt {
+  display: none !important;
+}
+
+/* Custom route line styling */
+.leaflet-interactive.leaflet-routing-line {
+  /* Hardware acceleration for smooth rendering */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  transition: stroke-width 0.3s ease, opacity 0.3s ease;
+}
+
+/* Navigation route - highlighted */
+.nav-route-line {
+  stroke: #1A73E8 !important;
+  stroke-width: 6 !important;
+  opacity: 0.9 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  filter: drop-shadow(0 2px 4px rgba(26, 115, 232, 0.4));
+  animation: routeFadeIn 0.6s ease-out;
+}
+
+@keyframes routeFadeIn {
+  from {
+    opacity: 0;
+    stroke-width: 2;
+  }
+  to {
+    opacity: 0.9;
+    stroke-width: 6;
+  }
+}
+
+/* ============= Journey code, group list, join requests ============= */
+
+.journey-code-display {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  text-align: center;
+  padding: var(--space-4);
+  margin: var(--space-3) 0;
+  color: var(--waysera-primary);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.group-empty {
+  padding: var(--space-4);
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+.group-member {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--waysera-primary);
+}
+
+.group-member:last-child {
+  border-bottom: none;
+}
+
+.group-member-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.group-status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: capitalize;
+}
+
+/* Status is semantic, not brand. It reads the same whatever the palette. */
+.group-status-live {
+  color: #065F46;
+  background: rgba(52, 199, 89, 0.18);
+}
+
+.group-status-stale {
+  color: #92400E;
+  background: rgba(255, 149, 0, 0.18);
+}
+
+.group-status-offline {
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+}
+
+.group-member-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+
+.group-fact:empty {
+  display: none;
+}
+
+/* Join approval. Kept prominent, since granting the journey key is the one
+   decision a hostile relay cannot make on the user's behalf. */
+.join-request {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 10002;
+  width: calc(100% - 32px);
+  max-width: 420px;
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.join-request-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.join-request-body {
+  font-size: 13.5px;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-3);
+}
+
+.join-request-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.join-request-actions .btn {
+  flex: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .group-status-live {
+    color: #6EE7B7;
+    background: rgba(52, 199, 89, 0.16);
+  }
+
+  .group-status-stale {
+    color: #FCD34D;
+    background: rgba(255, 149, 0, 0.16);
+  }
+}
+
+/* ============= Quick messages ============= */
+
+.quick-messages {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding: var(--space-1) 0 var(--space-3);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.quick-messages::-webkit-scrollbar {
+  display: none;
+}
+
+.quick-message {
+  flex: 0 0 auto;
+  padding: 9px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.quick-message:active {
+  background: var(--bg-tertiary);
+  border-color: var(--waysera-primary);
+}
+
+.quick-message[disabled] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ============= Toasts ============= */
+
+.toast-stack {
+  position: fixed;
+  top: calc(16px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10001;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: calc(100% - 32px);
+  max-width: 420px;
+  pointer-events: none;
+}
+
+.toast {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-md);
+  animation: toastIn var(--transition-normal) ease-out;
+}
+
+.toast-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.toast-body {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.toast-message .toast-title {
+  color: var(--waysera-primary);
+}
+
+.toast-notice {
+  border-left: 3px solid var(--status-warning);
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============= Replay ============= */
+
+.replay-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--space-4);
+}
+
+.replay-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.replay-back {
+  color: var(--waysera-primary);
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.replay-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+.replay-subtitle {
+  font-size: 13.5px;
+  color: var(--text-tertiary);
+  margin: 2px 0 0;
+}
+
+.replay-error {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--status-warning);
+  color: var(--text-secondary);
+}
+
+.replay-map {
+  height: 46vh;
+  min-height: 280px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+
+.replay-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.replay-controls .btn {
+  min-width: 92px;
+}
+
+.replay-scrubber {
+  flex: 1;
+  accent-color: var(--waysera-primary);
+}
+
+.replay-clock {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.replay-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-3);
+}
+
+.replay-speeds {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.replay-speed {
+  padding: 7px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.replay-speed.is-active {
+  background: var(--waysera-primary);
+  border-color: var(--waysera-primary);
+  color: #FFFFFF;
+}
+
+.replay-exports {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.replay-timeline {
+  margin-top: var(--space-6);
+}
+
+.replay-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+
+.replay-event {
+  display: flex;
+  gap: var(--space-3);
+  width: 100%;
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.replay-event:active {
+  background: var(--bg-tertiary);
+}
+
+.replay-event-time {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  color: var(--waysera-primary);
+  min-width: 46px;
+}
+
+.replay-empty {
+  color: var(--text-tertiary);
+  font-size: 14px;
+  padding: var(--space-3);
+}
+
+/* ============= Past journeys ============= */
+
+.journey-list {
+  margin-top: var(--space-4);
+}
+
+.journey-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.journey-list-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.journey-list-name {
+  font-weight: 600;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.journey-list-meta {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+
+.journey-list-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.journey-list-actions .btn {
+  padding: 7px 14px;
+  font-size: 13.5px;
+}
+
+/* ============= Navigation voice toggle ============= */
+
+/* Voice is a flex item in the nav-panel-content column,
+   sitting just below the instruction card, left-aligned */
+.nav-voice-btn {
+  position: relative;
+  align-self: flex-start;
+  margin-left: 16px;
+  margin-top: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(10, 12, 20, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.15s ease, opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.nav-voice-btn[aria-pressed="false"] {
+  opacity: 0.5;
+}
+
+.nav-voice-btn:active {
+  background: rgba(79, 70, 229, 0.7);
+}
+
+/* ============= Full-screen search overlay (Google Maps style) ============= */
+
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  /* Slide up from bottom on mobile, fade on desktop */
+  transform: translateY(100%);
+  opacity: 0;
+  transition:
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity   0.28s ease;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.search-overlay.is-open {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+@media (min-width: 600px) {
+  .search-overlay {
+    transform: none;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .search-overlay.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Header: back button + input + clear */
+.search-overlay-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.search-back-btn {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.search-back-btn:active { background: var(--bg-tertiary); }
+
+.search-overlay-input {
+  flex: 1;
+  height: 46px;
+  padding: 0 var(--space-4);
+  font-size: 16px;
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-md);
+  outline: none;
+  -webkit-appearance: none;
+  transition: border-color var(--transition-fast);
+}
+
+.search-overlay-input:focus {
+  border-color: var(--waysera-primary);
+}
+
+.search-overlay-input::placeholder { color: var(--text-tertiary); }
+
+.search-clear-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Results pane */
+.search-overlay-results {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.search-section-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: var(--space-4) var(--space-4) var(--space-2);
+}
+
+.search-hint {
+  padding: 48px var(--space-5);
+  font-size: 15px;
+  color: var(--text-tertiary);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Suggestion row */
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  min-height: 64px;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.suggestion-item:active,
+.suggestion-item.is-active { background: var(--bg-tertiary); }
+
+/* Icon bubble */
+.suggestion-icon-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  flex-shrink: 0;
+}
+
+.suggestion-main { flex: 1; min-width: 0; }
+
+.suggestion-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-coords {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.suggestion-distance {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--waysera-primary);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============= Destination search ============= */
+
+.search-box {
+  position: relative;
+  width: 100%;
+}
+
+.search-suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: none;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.search-suggestions.show {
+  display: block;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 11px var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+/* Hover and keyboard selection share one treatment, so moving between mouse
+   and arrow keys does not change what "selected" looks like. */
+.suggestion-item:hover,
+.suggestion-item.is-active {
+  background: var(--bg-tertiary);
+}
+
+.suggestion-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.suggestion-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestion-coords {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestion-distance {
+  flex-shrink: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--waysera-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.suggestion-status {
+  padding: 14px var(--space-4);
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
+
+.coords-display {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--waysera-secondary);
+  margin-top: var(--space-2);
+  padding: 8px 12px;
+  background: rgba(20, 184, 166, 0.1);
+  border-radius: var(--radius-sm);
+}
+
+.search-near {
+  margin-top: var(--space-2);
+  padding: 7px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--waysera-primary);
+  font-family: var(--font-family);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.search-near:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Coordinates are a fallback for places a geocoder cannot find, so they are
+   folded away rather than sitting in front of everyone by default. */
+.coords-fallback {
+  margin-bottom: var(--space-4);
+}
+
+.coords-fallback > summary {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: var(--space-2) 0;
+  list-style: none;
+}
+
+.coords-fallback > summary::-webkit-details-marker {
+  display: none;
+}
+
+.coords-fallback > summary::before {
+  content: '+ ';
+}
+
+.coords-fallback[open] > summary::before {
+  content: '– ';
+}
+
+/* ============= Home page redesign ============= */
+
+#homePage {
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Animated hero gradient */
+@keyframes heroFlow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Hero section */
+.home-hero {
+  background: linear-gradient(-45deg,
+    #FF3B30,
+    #FF6B35,
+    #FF9500,
+    #FFCC00,
+    #30D158,
+    #00C7BE,
+    #32ADE6,
+    #0A84FF,
+    #5E5CE6,
+    #BF5AF2,
+    #FF375F,
+    #FF3B30
+  );
+  background-size: 800% 800%;
+  padding: max(env(safe-area-inset-top, 20px), 20px) var(--space-5) var(--space-8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  position: relative;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .home-hero {
+    animation: heroFlow 18s ease infinite;
+  }
+}
+
+.home-hero-bg-mark {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  opacity: 0.06;
+  bottom: -80px;
+  right: -50px;
+  pointer-events: none;
+}
+
+/* Icon ring */
+.hero-icon-ring {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  margin-top: var(--space-4);
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 0 6px rgba(255,255,255,0.08), 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.home-hero-mark {
+  width: 44px;
+  height: 44px;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
+}
+
+/* Text with visible dark outline — stays crisp on every gradient colour */
+.home-hero-name {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  color: #FFFFFF;
+  margin: var(--space-2) 0 0;
+  position: relative;
+  z-index: 1;
+  -webkit-text-stroke: 2px rgba(0, 0, 0, 0.35);
+  paint-order: stroke fill;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.18);
+  text-transform: uppercase;
+}
+
+.home-hero-tagline {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin: 2px 0 0;
+  position: relative;
+  z-index: 1;
+  letter-spacing: 0.5px;
+  -webkit-text-stroke: 1.5px rgba(0, 0, 0, 0.3);
+  paint-order: stroke fill;
+  text-transform: uppercase;
+}
+
+.home-hero-pills {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Glassmorphism pills */
+.home-hero-pill {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  padding: 5px 14px;
+  letter-spacing: 0.3px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Home body */
+.home-body {
+  padding: var(--space-5) var(--space-4) var(--space-8);
+  max-width: 600px;
+  width: 100%;
+  margin: 0 auto;
+  flex: 1;
+}
+
+/* Tab switcher — iOS segmented control style */
+.tab-switcher {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  margin-bottom: var(--space-4);
+  gap: 2px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px var(--space-3);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-family);
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius-lg) - 4px);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.tab-btn.tab-active {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Tab panels */
+.tab-panel {
+  animation: tabFadeIn 0.2s ease-out;
+}
+
+@keyframes tabFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Journey code input — large, monospace, centred */
+.code-input {
+  font-size: 30px !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace !important;
+  letter-spacing: 10px !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  padding: var(--space-4) var(--space-3) !important;
+  color: var(--waysera-primary) !important;
+  font-weight: 700 !important;
+  border-color: var(--waysera-primary) !important;
+  background: color-mix(in srgb, var(--waysera-primary) 6%, var(--bg-tertiary)) !important;
+}
+
+.code-input:focus {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--waysera-primary) 20%, transparent) !important;
+}
+
+.code-input::placeholder {
+  color: color-mix(in srgb, var(--waysera-primary) 35%, transparent) !important;
+  letter-spacing: 10px;
+}
+
+/* Section hint text */
+.section-hint {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-3);
+  margin-top: calc(-1 * var(--space-2));
+}
+
+/* ============= Room header — tappable code ============= */
+
+.room-code-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace;
+  font-size: 12.5px;
+  margin-top: 2px;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity var(--transition-fast);
+}
+
+.room-code-btn:active {
+  opacity: 0.5;
+}
+
+/* ============= Bottom sheet action reorganisation ============= */
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+}
+
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.action-buttons .btn {
+  font-size: 15px;
+  padding: var(--space-3) var(--space-4);
+}
+
+/* Collapse chevron replaces the old ▼ text character */
+.collapse-chevron {
+  color: var(--text-tertiary);
+  transition: transform var(--transition-normal);
+  flex-shrink: 0;
+}
+
+.bottom-sheet.collapsed .collapse-chevron {
+  transform: rotate(180deg);
+}
+
+/* ============================================================
+   MAPS-STYLE ROOM PAGE
+   .room-active is added by JS only when entering a journey.
+   Without it the room page respects display:none from HTML.
+   Mobile: floating pill header + bottom sheet peek state.
+   Desktop (≥769px): pill header + right side panel.
+   ============================================================ */
+
+/* Room page: pin to viewport — only when JS activates it */
+#roomPage.room-active {
+  position: fixed;
+  inset: 0;
+  height: auto;
+  overflow: hidden;
+  display: block; /* mobile default; desktop overridden below */
+}
+
+/* Map: fill the entire room page on mobile */
+#roomPage.room-active #map {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  width: auto;
+  z-index: 1;
+  flex: none;
+  background: #e8e0d8;
+}
+
+/* Floating pill header */
+.room-header {
+  position: fixed !important;
+  top: max(16px, calc(env(safe-area-inset-top) + 8px)) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  right: auto !important;
+  width: calc(100% - 32px);
+  max-width: 480px;
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0,0,0,0.06) !important;
+  padding: 10px 16px !important;
+  min-height: auto !important;
+  z-index: 200 !important;
+  transition: opacity 0.3s ease !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .room-header {
+    background: rgba(17, 24, 39, 0.9) !important;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.08) !important;
+  }
+}
+
+.room-info h1 {
+  font-size: 15px;
+  max-width: none;
+}
+
+/* Location banner: clear the pill header */
+.location-banner {
+  top: max(82px, calc(env(safe-area-inset-top) + 74px)) !important;
+}
+
+/* Bottom sheet: peek by default, slides up on expand */
+.bottom-sheet {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+  border-top-left-radius: var(--radius-xl) !important;
+  border-top-right-radius: var(--radius-xl) !important;
+  box-shadow: 0 -4px 32px rgba(0,0,0,0.14) !important;
+  z-index: 100 !important;
+  max-height: 85vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  /* Peek: only the sheet-header is visible (~72px) */
+  transform: translateY(calc(100% - 72px)) !important;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  padding-bottom: env(safe-area-inset-bottom) !important;
+  touch-action: pan-y !important;
+}
+
+.bottom-sheet.expanded {
+  transform: translateY(0) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .bottom-sheet {
+    background: rgba(17, 24, 39, 0.98) !important;
+    box-shadow: 0 -4px 32px rgba(0,0,0,0.5) !important;
+  }
+}
+
+/* Chevron points up (peek = collapsed), down when expanded */
+.collapse-chevron {
+  transition: transform var(--transition-normal) !important;
+}
+
+.bottom-sheet.expanded .collapse-chevron {
+  transform: rotate(180deg) !important;
+}
+
+/* Desktop / tablet: side panel */
+@media (min-width: 769px) {
+  /* Flex row: map left, panel right.
+     !important overrides the JS inline style="display: block" */
+  #roomPage.room-active {
+    display: flex !important;
+    flex-direction: row;
+  }
+
+  /* Map: flex item instead of absolute fill */
+  #roomPage.room-active #map {
+    position: relative !important;
+    inset: auto !important;
+    flex: 1 !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 100% !important;
+  }
+
+  /* Pill header: spans the map area, leaves room for the panel */
+  .room-header {
+    left: 16px !important;
+    right: 396px !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  /* Side panel replaces bottom sheet */
+  .bottom-sheet {
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 380px !important;
+    max-height: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    transform: none !important;
+    box-shadow: none !important;
+    border-left: 1px solid var(--border-subtle) !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+    overflow-y: auto !important;
+  }
+
+  /* No drag handle on desktop */
+  .sheet-header::before,
+  .collapse-chevron { display: none !important; }
+
+  .sheet-header { cursor: default !important; padding-top: var(--space-5) !important; }
+}
+
+/* NAVIGATION MODE POLISH */
+
+/* Desktop: nav panel must not cover the side panel */
+@media (min-width: 769px) {
+  #roomPage.room-active .nav-panel {
+    right: 380px;
+  }
+}
+
+/* Remove the distracting float + pulse animations — they read as buggy */
+.nav-icon-wrapper {
+  animation: none !important;
+}
+.nav-instruction-container {
+  animation: none !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Brand colour for the direction icon box */
+.nav-icon-wrapper {
+  background: var(--waysera-primary) !important;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.45) !important;
+  border-radius: var(--radius-lg) !important;
+}
+
+/* Instruction card: floating, same pattern as stats bar */
+.nav-instruction-container {
+  border-radius: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(10, 12, 20, 0.93) !important;
+  margin: max(env(safe-area-inset-top, 12px), 12px) 12px 0 !important;
+}
+
+/* Stats bar: push to the bottom of the flex column */
+.nav-stats-container {
+  margin-top: auto !important;
+  margin-bottom: max(env(safe-area-inset-bottom, 12px), 12px) !important;
+  margin-left: 12px !important;
+  margin-right: 12px !important;
+}
+
+/* Instruction text hierarchy */
+.nav-instruction {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.3px !important;
+}
+.nav-distance-next {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  opacity: 0.75;
+}
+
+/* Stats bar: clean card, subtle separator lines */
+.nav-stats-container {
+  background: rgba(10, 12, 20, 0.93) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: var(--radius-xl) !important;
+  margin-bottom: 16px;
+}
+
+/* Stat labels: smaller caps, more breathing room */
+.nav-stat-label {
+  font-size: 10px !important;
+  letter-spacing: 1.2px !important;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin-bottom: 6px !important;
+}
+.nav-stat-value {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.5px !important;
+}
+
+/* Voice/exit button overrides removed — styles now defined in base rules above */
+
+/* Nav panel: fully transparent — the floating cards provide all backgrounds.
+   No overlay haze means both cards clearly float on the live map. */
+.nav-panel {
+  background: transparent !important;
+}
+
+/* MOBILE MAP UI POLISH  (applies only on small screens) */
+
+@media (max-width: 768px) {
+
+  /* Floating pill header */
+  .room-header {
+    top: max(12px, calc(env(safe-area-inset-top) + 6px)) !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    padding: 10px 14px !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    box-shadow:
+      0 1px 0 rgba(0,0,0,0.04),
+      0 4px 20px rgba(0,0,0,0.16) !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .room-header {
+      background: rgba(18, 20, 30, 0.93) !important;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,0.05),
+        0 4px 20px rgba(0,0,0,0.55) !important;
+    }
+  }
+
+  .room-info h1 {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.2px !important;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .room-code-btn {
+    font-size: 11px !important;
+    margin-top: 1px !important;
+  }
+
+  .room-timer   { font-size: 13px !important; font-weight: 700 !important; }
+  .room-member-count { font-size: 11px !important; }
+
+  /* Bottom sheet */
+  .bottom-sheet {
+    border-top-left-radius: 22px !important;
+    border-top-right-radius: 22px !important;
+    transform: translateY(calc(100% - 96px)) !important;
+    box-shadow: 0 -2px 32px rgba(0,0,0,0.18) !important;
+  }
+
+  .bottom-sheet.expanded {
+    transform: translateY(0) !important;
+  }
+
+  /* Sheet header: taller hit area, better layout */
+  .sheet-header {
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    cursor: pointer !important;
+  }
+
+  /* Drag pill */
+  .sheet-drag-pill {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--ios-gray-light);
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
+
+  /* Peek row: shows only when NOT expanded */
+  .sheet-peek-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px 12px;
+    opacity: 1;
+    transition: opacity 0.2s;
+  }
+
+  .bottom-sheet.expanded .sheet-peek-row {
+    display: none;
+  }
+
+  .sheet-peek-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+  }
+
+  .sheet-peek-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    background: var(--bg-tertiary);
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+
+  /* Expanded header row: shows only when expanded */
+  .sheet-expanded-row {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 18px 12px;
+  }
+
+  .bottom-sheet.expanded .sheet-expanded-row {
+    display: flex;
+  }
+
+  .sheet-full-title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  /* Sheet content */
+  .sheet-content {
+    padding: 0 16px 16px !important;
+    overscroll-behavior: contain;
+  }
+
+  /* Member cards */
+  .group-member {
+    border-radius: var(--radius-md);
+    border-left: none !important;
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 8px;
+    padding: 12px 14px !important;
+    background: var(--bg-secondary);
+  }
+
+  .group-member-head { margin-bottom: 4px; }
+
+  /* Quick message chips */
+  .quick-message {
+    padding: 8px 16px !important;
+    font-size: 13.5px !important;
+    border-radius: 999px !important;
+    background: var(--bg-tertiary) !important;
+    border: 1px solid var(--border-subtle) !important;
+  }
+
+  /* Action buttons */
+  .action-buttons {
+    padding-top: 12px !important;
+    gap: 10px !important;
+  }
+
+  .btn { border-radius: 14px !important; }
+  .btn-primary { font-size: 16px !important; padding: 14px !important; }
+  .btn-secondary { font-size: 15px !important; padding: 12px !important; }
+  .btn-danger.btn-full { font-size: 15px !important; padding: 14px !important; }
+
+  /* Navigation instruction card (mobile) */
+  .nav-instruction-container {
+    padding: 16px 18px !important;
+    gap: 14px !important;
+    border-radius: 18px !important;
+  }
+
+  .nav-icon-wrapper {
+    width: 54px !important;
+    height: 54px !important;
+    border-radius: 14px !important;
+  }
+
+  .nav-direction-arrow {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .nav-instruction   { font-size: 19px !important; }
+  .nav-distance-next { font-size: 13px !important; }
+
+  /* Stats bar */
+  .nav-stats-container {
+    padding: 14px 16px !important;
+    border-radius: 18px !important;
+    margin-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .nav-stat-value { font-size: 20px !important; }
+  .nav-stat-label { font-size: 9px !important; }
+
+  /* Voice toggle inherits flex-item positioning from base rules */
+}
+
+/* In-app confirm dialog (replaces window.confirm) */
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: toastIn 0.2s ease-out;
+}
+
+.confirm-card {
+  width: 100%;
+  max-width: 340px;
+  background: var(--bg-secondary);
+  border-radius: 22px;
+  padding: var(--space-6) var(--space-5) var(--space-4);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.confirm-title {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2);
+}
+
+.confirm-body {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+  margin: 0 0 var(--space-5);
+}
+
+.confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.confirm-actions .btn {
+  width: 100%;
+  font-size: 15px;
+  padding: var(--space-3);
+}
+
+/* Journey complete overlay */
+.journey-complete-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: toastIn 0.4s ease-out;
+}
+
+.journey-complete-card {
+  background: var(--bg-secondary);
+  border-radius: 28px;
+  padding: 40px 36px 32px;
+  text-align: center;
+  width: calc(100% - 48px);
+  max-width: 340px;
+  box-shadow: var(--shadow-lg);
+}
+
+.journey-complete-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--status-success);
+  color: #fff;
+  font-size: 32px;
+  line-height: 64px;
+  margin: 0 auto 20px;
+}
+
+.journey-complete-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.journey-complete-sub {
+  font-size: 15px;
+  color: var(--text-tertiary);
+  margin: 0 0 24px;
+}
+
+.journey-complete-bar {
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.journey-complete-progress {
+  height: 100%;
+  width: 0%;
+  background: var(--status-success);
+  border-radius: 2px;
+  transition: width 5s linear;
+}
+
+/* ---- Navigation: fully hide bottom sheet ----
+   Two classes = higher specificity than any single-class !important rule.
+   This beats `.bottom-sheet { transform: ... !important }` reliably. */
+.bottom-sheet.nav-active {
+  transform: translateY(110%) !important;
+  pointer-events: none !important;
+  transition: transform 0.3s ease !important;
+}
+
+/* Leaflet attribution */
+/* Move attribution above the nav stats bar so it doesn't overlap */
+.leaflet-bottom.leaflet-right .leaflet-control-attribution {
+  position: absolute;
+  bottom: calc(100% + 4px); /* above zoom controls */
+  right: 0;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 4px 0 0 0;
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+/* Hide attribution during navigation to keep the map clean */
+.nav-panel[style*="display: block"] ~ #map .leaflet-control-attribution,
+.nav-panel[style*="display:block"] ~ #map .leaflet-control-attribution {
+  display: none;
+}
+
+/* Zoom control positioning */
+/* bottomright keeps it clear of the nav instruction card (top-left)
+   and the nav stats bar (bottom-centre). */
+.leaflet-bottom.leaflet-right {
+  bottom: 130px; /* above stats bar */
+  right: 12px;
+}
+
+/* On desktop the zoom sits inside the map area, left of the side panel */
+@media (min-width: 769px) {
+  .leaflet-bottom.leaflet-right {
+    bottom: 140px;
+    right: 16px;
+  }
+}
+
+/* ============================================================
+   Waysera design system — refinement layer.
+
+   Loaded after app-mobile.css and overrides it. Kept as a separate file so
+   what changed for the native app is legible in one place rather than diffused
+   through two thousand lines.
+
+   Three things drive every decision here:
+
+   1. BRAND.md is the source of truth. It specifies indigo #4F46E5 through sky
+      #0EA5E9 to aqua #14B8A6. The full-spectrum animation this replaces was a
+      departure from it, and colour that carries no meaning is the single
+      loudest signal that software is unfinished.
+
+   2. Colour earns its place or it goes. Navigation apps are read at a glance
+      while driving. Every hue that is not conveying state competes with the
+      ones that are: live/stale/offline, the route line, the destination.
+
+   3. Motion follows physics. Springs, not linear ramps. Interfaces feel cheap
+      when things move at constant speed, because nothing in the physical world
+      does.
+   ============================================================ */
+
+:root {
+  /* ---- Motion ----
+     Emphasised curves overshoot slightly, which reads as responsive.
+     Standard curves settle without overshoot, for things that should feel
+     precise rather than lively. */
+  --ease-emphasised: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring:     cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-standard:   cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+
+  --dur-instant: 100ms;   /* press feedback: must beat perception */
+  --dur-fast:    180ms;   /* state changes */
+  --dur-medium:  280ms;   /* sheets, overlays */
+  --dur-slow:    420ms;   /* full-screen transitions */
+
+  /* ---- Elevation ----
+     Two stacked shadows: a tight contact shadow for the edge, a wide diffuse
+     one for depth. A single blurred shadow always looks like a sticker. */
+  --elev-1:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 1px 3px rgba(15, 23, 42, 0.10);
+  --elev-2:
+    0 2px 4px rgba(15, 23, 42, 0.06),
+    0 4px 12px rgba(15, 23, 42, 0.10);
+  --elev-3:
+    0 4px 8px rgba(15, 23, 42, 0.06),
+    0 12px 28px rgba(15, 23, 42, 0.14);
+  --elev-4:
+    0 8px 16px rgba(15, 23, 42, 0.08),
+    0 24px 48px rgba(15, 23, 42, 0.18);
+
+  /* ---- Type scale ----
+     1.25 ratio. A consistent scale is most of what separates designed
+     typography from arbitrary pixel values. */
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 15px;
+  --text-md:   17px;
+  --text-lg:   20px;
+  --text-xl:   25px;
+  --text-2xl:  31px;
+  --text-3xl:  39px;
+
+  --tracking-tight:  -0.02em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.04em;
+
+  /* Radii */
+  --r-sm:   10px;
+  --r-md:   14px;
+  --r-lg:   18px;
+  --r-xl:   24px;
+  --r-full: 999px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Shadows are near-invisible on dark surfaces; depth has to come from
+       lighter surfaces and hairline borders instead. */
+    --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --elev-2: 0 2px 8px rgba(0, 0, 0, 0.5);
+    --elev-3: 0 8px 24px rgba(0, 0, 0, 0.55);
+    --elev-4: 0 16px 48px rgba(0, 0, 0, 0.65);
+  }
+}
+
+/* HERO */
+
+/* Layered radial gradients rather than a rotating linear one. The result
+   reads as depth rather than as a colour wheel, and it stays on-brand. */
+.home-hero {
+  background:
+    radial-gradient(100% 70% at 78% 4%, rgba(14, 165, 233, 0.5) 0%, transparent 62%),
+    linear-gradient(168deg, #4F46E5 0%, #4438C4 62%, #175F73 100%) !important;
+  background-size: auto !important;
+  animation: none !important;
+  padding-bottom: var(--space-7, 28px);
+  /* Blends into the page rather than ending on a hard horizontal line. */
+  border-bottom-left-radius: 28px;
+  border-bottom-right-radius: 28px;
+}
+
+/* A slow, small drift. Perceptible as liveliness, never as a light show.
+   Transform-only so it stays on the compositor. */
+@media (prefers-reduced-motion: no-preference) {
+  .home-hero::after {
+    content: '';
+    position: absolute;
+    inset: -30%;
+    background: radial-gradient(closest-side, rgba(255, 255, 255, 0.16), transparent);
+    animation: heroDrift 24s var(--ease-standard) infinite;
+    pointer-events: none;
+  }
+}
+
+@keyframes heroDrift {
+  0%, 100% { transform: translate3d(-8%, -4%, 0) scale(1);    }
+  50%      { transform: translate3d( 8%,  4%, 0) scale(1.12); }
+}
+
+.home-hero-name {
+  font-size: var(--text-3xl) !important;
+  font-weight: 800 !important;
+  letter-spacing: var(--tracking-tight) !important;
+  /* The heavy dark outline was doing the work a shadow should. Text on a
+     controlled gradient needs no stroke to stay legible. */
+  -webkit-text-stroke: 0 !important;
+  text-shadow: 0 2px 12px rgba(15, 23, 42, 0.28) !important;
+  text-transform: none !important;
+}
+
+.home-hero-tagline {
+  font-size: var(--text-base) !important;
+  font-weight: 500 !important;
+  letter-spacing: var(--tracking-normal) !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+  -webkit-text-stroke: 0 !important;
+  text-transform: none !important;
+  text-shadow: 0 1px 6px rgba(15, 23, 42, 0.2) !important;
+}
+
+/* Frosted ring around the mark */
+.hero-icon-ring {
+  width: 76px !important;
+  height: 76px !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 8px 24px rgba(15, 23, 42, 0.22) !important;
+}
+
+.home-hero-mark { width: 38px !important; height: 38px !important; }
+
+.home-hero-pill {
+  font-size: var(--text-xs) !important;
+  font-weight: 600 !important;
+  letter-spacing: var(--tracking-wide) !important;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.13) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  padding: 5px 11px !important;
+}
+
+/* CONTROLS */
+
+.btn {
+  border-radius: var(--r-md) !important;
+  font-weight: 600 !important;
+  letter-spacing: var(--tracking-tight);
+  transition:
+    transform var(--dur-instant) var(--ease-spring),
+    box-shadow var(--dur-fast) var(--ease-standard),
+    background   var(--dur-fast) var(--ease-standard) !important;
+}
+
+/* 0.97 rather than 0.95: enough to register, not so much that the label
+   visibly shrinks. */
+.btn:active { transform: scale(0.97) !important; }
+
+.btn-primary {
+  background: var(--waysera-primary) !important;
+  box-shadow: var(--elev-2), 0 4px 14px rgba(79, 70, 229, 0.32) !important;
+}
+
+.btn-primary:active {
+  background: var(--waysera-primary-strong) !important;
+  box-shadow: var(--elev-1), 0 2px 6px rgba(79, 70, 229, 0.28) !important;
+}
+
+.btn-secondary {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-subtle) !important;
+  color: var(--waysera-primary) !important;
+  box-shadow: var(--elev-1) !important;
+}
+
+.btn-danger {
+  background: var(--status-danger) !important;
+  box-shadow: var(--elev-2), 0 4px 14px rgba(255, 59, 48, 0.28) !important;
+}
+
+/* The expanding circle behind every button fired on unrelated presses and
+   read as a rendering artefact. Scale feedback alone is cleaner. */
+.btn::after { display: none !important; }
+
+/* Tab switcher */
+.tab-switcher {
+  padding: 4px !important;
+  border-radius: var(--r-md) !important;
+  background: var(--bg-tertiary) !important;
+}
+
+.tab-btn {
+  border-radius: var(--r-sm) !important;
+  font-size: var(--text-base) !important;
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    color      var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard) !important;
+}
+
+.tab-btn.tab-active { box-shadow: var(--elev-1) !important; }
+
+/* Inputs */
+.form-control {
+  border-radius: var(--r-md) !important;
+  border: 1.5px solid transparent !important;
+  background: var(--bg-tertiary) !important;
+  font-size: var(--text-md) !important;
+  transition:
+    border-color var(--dur-fast) var(--ease-standard),
+    background   var(--dur-fast) var(--ease-standard),
+    box-shadow   var(--dur-fast) var(--ease-standard) !important;
+}
+
+.form-control:focus {
+  border-color: var(--waysera-primary) !important;
+  background: var(--bg-secondary) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--waysera-primary) 14%, transparent) !important;
+}
+
+.form-label {
+  font-size: var(--text-xs) !important;
+  font-weight: 600 !important;
+  letter-spacing: var(--tracking-wide) !important;
+  color: var(--text-tertiary) !important;
+}
+
+/* Journey code: the one place monospace and wide tracking are correct,
+   because the string exists to be read aloud and typed by someone else. */
+.code-input {
+  font-size: var(--text-2xl) !important;
+  letter-spacing: 0.22em !important;
+  border: 1.5px solid var(--border-subtle) !important;
+  background: var(--bg-tertiary) !important;
+}
+
+.form-section {
+  border-radius: var(--r-xl) !important;
+  border: 1px solid var(--border-subtle) !important;
+  box-shadow: var(--elev-1) !important;
+  padding: var(--space-5) !important;
+}
+
+/* MAP SURFACES */
+
+.room-header {
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--elev-3) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  transition: opacity var(--dur-medium) var(--ease-standard) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .room-header { background: rgba(17, 24, 39, 0.92) !important; }
+}
+
+.room-info h1 {
+  font-size: var(--text-base) !important;
+  font-weight: 700 !important;
+  letter-spacing: var(--tracking-tight) !important;
+}
+
+/* LIVE badge: a pulsing dot conveys "receiving updates" faster than the word,
+   and survives being read at a glance. */
+.timer {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-xs) !important;
+  letter-spacing: var(--tracking-wide) !important;
+}
+
+.timer::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .timer::before { animation: livePulse 2.4s var(--ease-standard) infinite; }
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1;   transform: scale(1);   }
+  50%      { opacity: 0.45; transform: scale(0.82); }
+}
+
+/* Bottom sheet */
+.bottom-sheet {
+  border-top-left-radius: 26px !important;
+  border-top-right-radius: 26px !important;
+  box-shadow: var(--elev-4) !important;
+  transition: transform var(--dur-medium) var(--ease-emphasised) !important;
+}
+
+.sheet-drag-pill {
+  width: 36px !important;
+  height: 4px !important;
+  background: var(--ios-gray-light) !important;
+  opacity: 0.7;
+}
+
+/* Group rows */
+.group-member {
+  border-radius: var(--r-md) !important;
+  border: 1px solid var(--border-subtle) !important;
+  background: var(--bg-secondary) !important;
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+
+.group-status {
+  font-size: var(--text-xs) !important;
+  font-weight: 600 !important;
+  letter-spacing: var(--tracking-wide);
+  padding: 3px 9px !important;
+}
+
+/* Quick messages */
+.quick-message {
+  border-radius: var(--r-full) !important;
+  font-size: var(--text-sm) !important;
+  padding: 9px 15px !important;
+  background: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-subtle) !important;
+  transition:
+    transform var(--dur-instant) var(--ease-spring),
+    background var(--dur-fast) var(--ease-standard) !important;
+}
+
+.quick-message:active {
+  transform: scale(0.95) !important;
+  background: color-mix(in srgb, var(--waysera-primary) 12%, var(--bg-tertiary)) !important;
+}
+
+/* SEARCH */
+
+.search-overlay {
+  transition:
+    transform var(--dur-medium) var(--ease-emphasised),
+    opacity   var(--dur-fast)   var(--ease-standard) !important;
+}
+
+.suggestion-item {
+  transition: background var(--dur-instant) var(--ease-standard);
+}
+
+.suggestion-item:active {
+  background: var(--bg-tertiary) !important;
+}
+
+.suggestion-icon-wrap {
+  width: 40px !important;
+  height: 40px !important;
+  font-size: 18px !important;
+  background: var(--bg-tertiary) !important;
+}
+
+.search-section-label {
+  font-size: var(--text-xs) !important;
+  letter-spacing: var(--tracking-wide) !important;
+  font-weight: 700 !important;
+}
+
+/* Staggered entry. The delay is capped so a long list never feels slow. */
+@media (prefers-reduced-motion: no-preference) {
+  .search-overlay.is-open .suggestion-item {
+    animation: rowIn var(--dur-fast) var(--ease-decelerate) backwards;
+  }
+  .search-overlay.is-open .suggestion-item:nth-child(1) { animation-delay: 0ms; }
+  .search-overlay.is-open .suggestion-item:nth-child(2) { animation-delay: 20ms; }
+  .search-overlay.is-open .suggestion-item:nth-child(3) { animation-delay: 40ms; }
+  .search-overlay.is-open .suggestion-item:nth-child(4) { animation-delay: 60ms; }
+  .search-overlay.is-open .suggestion-item:nth-child(n+5) { animation-delay: 80ms; }
+}
+
+@keyframes rowIn {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* FEEDBACK */
+
+.toast {
+  border-radius: var(--r-md) !important;
+  box-shadow: var(--elev-3) !important;
+  border: 1px solid var(--border-subtle) !important;
+  animation: toastIn var(--dur-medium) var(--ease-spring) !important;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translate3d(0, -12px, 0) scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+
+.join-request {
+  border-radius: var(--r-xl) !important;
+  box-shadow: var(--elev-4) !important;
+  animation: sheetUp var(--dur-medium) var(--ease-emphasised);
+}
+
+@keyframes sheetUp {
+  from { opacity: 0; transform: translate(-50%, 16px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.confirm-card {
+  border-radius: var(--r-xl) !important;
+  box-shadow: var(--elev-4) !important;
+  animation: cardIn var(--dur-medium) var(--ease-spring);
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ============================================================
+   SKELETONS
+   Reserving the row's real shape prevents the layout jump that a centred
+   spinner causes when results replace it.
+   ============================================================ */
+
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  min-height: 64px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.skeleton-circle,
+.skeleton-line {
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary) 25%,
+    color-mix(in srgb, var(--bg-tertiary) 55%, var(--bg-secondary)) 50%,
+    var(--bg-tertiary) 75%
+  );
+  background-size: 200% 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-circle,
+  .skeleton-line { animation: shimmer 1.4s linear infinite; }
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+.skeleton-circle { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; }
+.skeleton-stack  { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+.skeleton-line   { height: 11px; border-radius: 5px; }
+.skeleton-line.is-short { width: 45%; }
+
+/* NAVIGATION */
+
+.nav-instruction-container {
+  border-radius: 22px !important;
+  background: rgba(9, 11, 20, 0.94) !important;
+  box-shadow: var(--elev-4) !important;
+}
+
+.nav-icon-wrapper {
+  border-radius: var(--r-md) !important;
+  background: var(--waysera-primary) !important;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4) !important;
+}
+
+.nav-stats-container {
+  border-radius: 22px !important;
+  background: rgba(9, 11, 20, 0.94) !important;
+  box-shadow: var(--elev-4) !important;
+}
+
+.nav-stat-value {
+  font-variant-numeric: tabular-nums;   /* stops digits jittering as they tick */
+  letter-spacing: var(--tracking-tight) !important;
+}
+
+.nav-stat-label {
+  letter-spacing: var(--tracking-wide) !important;
+  font-size: var(--text-xs) !important;
+}
+
+/* PAST JOURNEYS */
+
+.journey-list-item {
+  padding: var(--space-3) !important;
+  border-radius: var(--r-md);
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background var(--dur-fast) var(--ease-standard);
+}
+
+.journey-list-item:active { background: var(--bg-tertiary); }
+
+/* ACCESSIBILITY */
+
+/* Applied on the element itself rather than a wrapper, so the ring follows
+   the control's own radius instead of boxing a pill in a rectangle. */
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--waysera-primary) !important;
+  outline-offset: 2px !important;
+}
+
+/* Never suppress motion wholesale for users who asked for less of it: the
+   0.01ms trick still runs animations, just imperceptibly, which keeps their
+   layout side effects. Disabling outright is the honest reading. */
+@media (prefers-reduced-motion: reduce) {
+  .home-hero::after,
+  .timer::before,
+  .skeleton-circle,
+  .skeleton-line { animation: none !important; }
+}
+
+/* ============================================================
+   EMPTY STATES
+   An empty group is the moment to invite someone, not a status to report.
+   ============================================================ */
+
+.group-empty-state {
+  padding: var(--space-4) var(--space-3) var(--space-2);
+  text-align: center;
+}
+
+.group-empty-title {
+  font-size: var(--text-base);
+  font-weight: 650;
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.group-empty-body {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  line-height: 1.5;
+  margin-bottom: var(--space-3);
+}
+
+.result.success h3 {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  margin-bottom: 4px;
+}
+
+.result.success p {
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-3);
+  opacity: 0.9;
+}
+
+.suggestion-icon-wrap {
+  color: var(--text-tertiary);
+}
+
+.suggestion-icon-wrap svg {
+  display: block;
+}
+
+/* The create panel doubles as the first-run name step. Success green reads as
+   "finished" on what is actually a form, so that path gets a neutral surface. */
+.result.result-prompt {
+  display: block;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.result.result-prompt h3 { color: var(--text-primary); }
+.result.result-prompt p  { color: var(--text-tertiary); }
+
+/* Monochrome pass.
+
+   The previous palette used brand colour as decoration: a saturated gradient
+   header, filled indigo and red buttons, coloured pills. On a map, which is
+   already the most visually busy thing on screen, that competes for attention
+   and reads as a toy.
+
+   Here colour means something or it is absent. Neutral chrome, near-black or
+   near-white surfaces, and saturation reserved for four things only: whether
+   someone is live, where they are, the route, and destructive actions. The
+   basemap is greyscale for the same reason. */
+
+:root {
+  --ink:         #0A0A0B;
+  --ink-2:       #3F3F46;
+  --ink-3:       #71717A;
+  --ink-4:       #A1A1AA;
+  --line:        #E4E4E7;
+  --line-strong: #D4D4D8;
+  --surface:     #FFFFFF;
+  --surface-2:   #FAFAFA;
+  --surface-3:   #F4F4F5;
+
+  --bg-primary:   var(--surface-2);
+  --bg-secondary: var(--surface);
+  --bg-tertiary:  var(--surface-3);
+  --border-subtle: var(--line);
+
+  --text-primary:   var(--ink);
+  --text-secondary: var(--ink-2);
+  --text-tertiary:  var(--ink-3);
+
+  /* Retained for the few places that carry meaning. Muted from the stock iOS
+     values, which are loud enough to read as alerts. */
+  --status-live:   #16A34A;
+  --status-stale:  #CA8A04;
+  --status-danger: #DC2626;
+
+  /* The one saturated colour left in the product: the user's own position and
+     their route. It is the answer to "where am I", so it should be the first
+     thing the eye finds. */
+  --waysera-primary:        #4F46E5;
+  --waysera-primary-strong: #4338CA;
+
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+
+  --elev-1: 0 1px 2px rgba(9, 9, 11, 0.05);
+  --elev-2: 0 1px 3px rgba(9, 9, 11, 0.07), 0 1px 2px rgba(9, 9, 11, 0.04);
+  --elev-3: 0 4px 12px rgba(9, 9, 11, 0.08), 0 2px 4px rgba(9, 9, 11, 0.04);
+  --elev-4: 0 12px 32px rgba(9, 9, 11, 0.12), 0 4px 8px rgba(9, 9, 11, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink:         #FAFAFA;
+    --ink-2:       #D4D4D8;
+    --ink-3:       #A1A1AA;
+    --ink-4:       #71717A;
+    --line:        #27272A;
+    --line-strong: #3F3F46;
+    --surface:     #131316;
+    --surface-2:   #09090B;
+    --surface-3:   #1C1C20;
+
+    --elev-1: 0 1px 2px rgba(0, 0, 0, 0.6);
+    --elev-2: 0 2px 6px rgba(0, 0, 0, 0.65);
+    --elev-3: 0 6px 20px rgba(0, 0, 0, 0.7);
+    --elev-4: 0 16px 40px rgba(0, 0, 0, 0.75);
+  }
+}
+
+/* Header: type and space, no gradient. */
+.home-hero {
+  background: var(--bg-primary) !important;
+  border-radius: 0 !important;
+  padding: max(env(safe-area-inset-top), 28px) var(--space-5) var(--space-6) !important;
+  border-bottom: 1px solid var(--line);
+}
+
+.home-hero::after      { display: none !important; }
+.home-hero-bg-mark     { display: none !important; }
+
+.hero-icon-ring {
+  width: 52px !important;
+  height: 52px !important;
+  background: var(--ink) !important;
+  border: none !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: none !important;
+  margin-top: 0 !important;
+}
+
+.home-hero-mark {
+  width: 30px !important;
+  height: 30px !important;
+  color: var(--surface);
+  filter: none !important;
+}
+
+.home-hero-name {
+  font-size: 27px !important;
+  font-weight: 640 !important;
+  letter-spacing: -0.03em !important;
+  color: var(--text-primary) !important;
+  text-shadow: none !important;
+  margin-top: var(--space-3) !important;
+}
+
+.home-hero-tagline {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  color: var(--text-tertiary) !important;
+  text-shadow: none !important;
+}
+
+/* Three claims set as one quiet line, not three badges. */
+.home-hero-pills {
+  gap: 0 !important;
+  margin-top: var(--space-3) !important;
+}
+
+.home-hero-pill {
+  background: none !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+  color: var(--ink-4) !important;
+}
+
+.home-hero-pill + .home-hero-pill::before {
+  content: '·';
+  margin: 0 8px;
+  color: var(--ink-4);
+}
+
+/* Primary action is black, the way a considered product does it. */
+.btn-primary {
+  background: var(--ink) !important;
+  color: var(--surface) !important;
+  box-shadow: none !important;
+  border: 1px solid var(--ink) !important;
+}
+
+.btn-primary:active {
+  background: var(--ink-2) !important;
+  border-color: var(--ink-2) !important;
+  box-shadow: none !important;
+}
+
+.btn-secondary {
+  background: var(--surface) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--line-strong) !important;
+  box-shadow: none !important;
+}
+
+.btn-secondary:active { background: var(--surface-3) !important; }
+
+/* Leaving is rare and reversible. It does not warrant a red slab. */
+.btn-danger {
+  background: var(--surface) !important;
+  color: var(--status-danger) !important;
+  border: 1px solid var(--line-strong) !important;
+  box-shadow: none !important;
+}
+
+.btn-danger:active {
+  background: color-mix(in srgb, var(--status-danger) 8%, var(--surface)) !important;
+  border-color: var(--status-danger) !important;
+}
+
+.btn { border-radius: var(--r-md) !important; }
+
+.form-section {
+  border-radius: var(--r-lg) !important;
+  box-shadow: none !important;
+  border: 1px solid var(--line) !important;
+}
+
+.form-control {
+  border-radius: var(--r-md) !important;
+  border: 1px solid var(--line-strong) !important;
+  background: var(--surface) !important;
+}
+
+.form-control:focus {
+  border-color: var(--ink) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 10%, transparent) !important;
+}
+
+.tab-switcher {
+  background: var(--surface-3) !important;
+  border-radius: var(--r-md) !important;
+  padding: 3px !important;
+}
+
+.tab-btn { border-radius: 7px !important; }
+
+.tab-btn.tab-active {
+  background: var(--surface) !important;
+  box-shadow: var(--elev-1) !important;
+}
+
+.code-input {
+  color: var(--text-primary) !important;
+  border-color: var(--line-strong) !important;
+  background: var(--surface-3) !important;
+  font-weight: 600 !important;
+}
+
+.code-input::placeholder { color: var(--ink-4) !important; }
+
+/* Map surfaces */
+.room-header {
+  border-radius: var(--r-lg) !important;
+  background: color-mix(in srgb, var(--surface) 92%, transparent) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: var(--elev-2) !important;
+}
+
+.bottom-sheet {
+  border-top-left-radius: var(--r-xl) !important;
+  border-top-right-radius: var(--r-xl) !important;
+  border-top: 1px solid var(--line) !important;
+  box-shadow: var(--elev-3) !important;
+}
+
+/* Status: a dot and a word, not a filled chip. */
+.timer {
+  background: none !important;
+  padding: 0 !important;
+  color: var(--status-live) !important;
+  font-weight: 600 !important;
+}
+
+.group-status {
+  background: none !important;
+  padding: 0 !important;
+  font-weight: 500 !important;
+  font-size: 12px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.group-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.group-status-live    { color: var(--status-live) !important; }
+.group-status-stale   { color: var(--status-stale) !important; }
+.group-status-offline { color: var(--ink-4) !important; }
+
+.group-member {
+  border-radius: var(--r-md) !important;
+  border: 1px solid var(--line) !important;
+  border-left: 1px solid var(--line) !important;
+}
+
+.quick-message {
+  border-radius: var(--r-md) !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--line-strong) !important;
+  font-weight: 500 !important;
+}
+
+.suggestion-icon-wrap {
+  background: var(--surface-3) !important;
+  border-radius: var(--r-sm) !important;
+  color: var(--ink-3) !important;
+}
+
+.suggestion-distance {
+  color: var(--ink-3) !important;
+  font-weight: 500 !important;
+}
+
+.search-overlay-input {
+  border-radius: var(--r-md) !important;
+  background: var(--surface-3) !important;
+}
+
+.search-overlay-input:focus { border-color: var(--ink) !important; }
+
+/* Navigation keeps a dark instruction card; it is read at speed. */
+.nav-instruction-container,
+.nav-stats-container {
+  background: color-mix(in srgb, var(--ink) 96%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--surface) 14%, transparent) !important;
+  border-radius: var(--r-lg) !important;
+}
+
+.nav-icon-wrapper {
+  background: var(--waysera-primary) !important;
+  border-radius: var(--r-sm) !important;
+  box-shadow: none !important;
+}
+
+.toast,
+.join-request,
+.confirm-card {
+  border-radius: var(--r-lg) !important;
+  border: 1px solid var(--line) !important;
+}
+
+.journey-code-display {
+  color: var(--text-primary) !important;
+  background: var(--surface-3) !important;
+  border-radius: var(--r-md) !important;
+  font-weight: 600 !important;
+}
+
+.location-banner-card {
+  background: var(--ink) !important;
+  border-radius: var(--r-lg) !important;
+}
+
+.location-banner-actions .btn-banner-primary {
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  border-radius: var(--r-sm) !important;
+}
+
+.location-banner-actions .btn-banner-secondary {
+  border-radius: var(--r-sm) !important;
+  border-color: color-mix(in srgb, var(--surface) 40%, transparent) !important;
+}
+
+/* Status words are still proper nouns of a sort — Live, Stale, Offline. */
+.group-status { text-transform: capitalize !important; }
+
+/* Leaflet's attribution wraps to four lines at phone widths and lands on top
+   of the zoom control. Keep it on one line, quiet, and out of the way. */
+.leaflet-control-attribution {
+  font-size: 9.5px !important;
+  max-width: 62vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: color-mix(in srgb, var(--surface) 78%, transparent) !important;
+  color: var(--ink-4) !important;
+  padding: 2px 6px !important;
+  border-radius: 4px 0 0 0;
+}
+
+.leaflet-control-attribution a { color: var(--ink-3) !important; }
+
+/* Zoom control: match the rest of the chrome rather than Leaflet's defaults. */
+.leaflet-control-zoom {
+  border: 1px solid var(--line) !important;
+  border-radius: var(--r-md) !important;
+  box-shadow: var(--elev-2) !important;
+  overflow: hidden;
+}
+
+.leaflet-control-zoom a {
+  background: var(--surface) !important;
+  color: var(--text-primary) !important;
+  font-weight: 400 !important;
+}
+
+.leaflet-control-zoom a:active { background: var(--surface-3) !important; }
+
+/* Identity line: states who you are without asking again. */
+.identity-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-3);
+  padding: 0 2px;
+}
+
+.identity-line strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.identity-change {
+  margin-left: auto;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* The mark inherits its colour so it inverts with the tile behind it.
+   Hardcoded white was invisible once dark mode flipped the tile to white. */
+.hero-icon-ring { color: var(--surface); }
+.home-hero-bg-mark { color: var(--text-primary); }

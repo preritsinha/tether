@@ -1,0 +1,17 @@
+{
+  "appId": "com.waysera.app",
+  "appName": "Waysera",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "http"
+  },
+  "android": {
+    "backgroundColor": "#0B1120",
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "Geolocation": {
+      "permissions": ["location"]
+    }
+  }
+}

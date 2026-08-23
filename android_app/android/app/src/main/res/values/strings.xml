@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Waysera</string>
+    <string name="title_activity_main">Waysera</string>
+    <string name="package_name">com.waysera.app</string>
+    <string name="custom_url_scheme">com.waysera.app</string>
+</resources>

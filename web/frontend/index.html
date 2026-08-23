@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#4F46E5">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B1120">
+
+    <title>Waysera — Live Group Navigation</title>
+    <meta name="description" content="Create a journey, share a code, and see your group move toward the same destination in real time.">
+    <meta name="application-name" content="Waysera">
+    <meta name="apple-mobile-web-app-title" content="Waysera">
+
+    <meta property="og:title" content="Waysera — Every journey, together.">
+    <meta property="og:description" content="Live group navigation for people heading to the same destination.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Waysera">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Waysera — Every journey, together.">
+    <meta name="twitter:description" content="Live group navigation for people heading to the same destination.">
+
+    <link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="manifest.webmanifest">
+
+    <link rel="stylesheet" href="assets/app-mobile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <script src="https://unpkg.com/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.js"></script>
+</head>
+<body>
+
+    <!-- ===================== HOME PAGE ===================== -->
+    <div id="homePage" class="page">
+
+        <!-- Hero -->
+        <div class="home-hero">
+            <!-- Decorative large background mark -->
+            <svg class="home-hero-bg-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <circle cx="4.6" cy="7.2" r="2.9" fill="currentColor"/>
+                <circle cx="16" cy="4.2" r="2.9" fill="currentColor"/>
+                <circle cx="27.4" cy="7.2" r="2.9" fill="currentColor"/>
+                <path d="M5.2 10.2 C6.4 15.8 9.6 19.4 13.6 21.2" stroke="currentColor" stroke-width="3.1" fill="none" stroke-linecap="round"/>
+                <path d="M16 7.4 L16 20.4" stroke="currentColor" stroke-width="3.1" fill="none" stroke-linecap="round"/>
+                <path d="M26.8 10.2 C25.6 15.8 22.4 19.4 18.4 21.2" stroke="currentColor" stroke-width="3.1" fill="none" stroke-linecap="round"/>
+                <circle cx="16" cy="25" r="4.7" fill="currentColor"/>
+            </svg>
+
+            <!-- Brand mark: circular ring + icon -->
+            <div class="hero-icon-ring">
+            <svg class="home-hero-mark" viewBox="0 0 32 32" fill="none" aria-label="Waysera" role="img">
+                <circle cx="4.6" cy="7.2" r="2.9" fill="currentColor"/>
+                <circle cx="16" cy="4.2" r="2.9" fill="currentColor"/>
+                <circle cx="27.4" cy="7.2" r="2.9" fill="currentColor"/>
+                <path d="M5.2 10.2 C6.4 15.8 9.6 19.4 13.6 21.2" stroke="currentColor" stroke-width="3.1" fill="none" stroke-linecap="round"/>
+                <path d="M16 7.4 L16 20.4" stroke="currentColor" stroke-width="3.1" fill="none" stroke-linecap="round"/>
+                <path d="M26.8 10.2 C25.6 15.8 22.4 19.4 18.4 21.2" stroke="currentColor" stroke-width="3.1" fill="none" stroke-linecap="round"/>
+                <circle cx="16" cy="25" r="4.7" fill="currentColor"/>
+            </svg>
+            </div>
+
+            <h1 class="home-hero-name">Waysera</h1>
+            <p class="home-hero-tagline">Every journey, together.</p>
+            <div class="home-hero-pills">
+                <span class="home-hero-pill">No signup</span>
+                <span class="home-hero-pill">Encrypted</span>
+                <span class="home-hero-pill">Quick</span>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="home-body">
+
+
+            <p class="identity-line" id="identityLine" style="display: none;">
+                Joining as <strong id="identityName"></strong>
+                <button type="button" class="identity-change" onclick="changeName()">Change</button>
+            </p>
+
+            <!-- Tab switcher -->
+            <div class="tab-switcher" role="tablist" aria-label="Journey action">
+                <button class="tab-btn tab-active" id="tabStart"
+                        role="tab" aria-selected="true" aria-controls="panelStart"
+                        onclick="switchTab('start')">
+                    Start a journey
+                </button>
+                <button class="tab-btn" id="tabJoin"
+                        role="tab" aria-selected="false" aria-controls="panelJoin"
+                        onclick="switchTab('join')">
+                    Join
+                </button>
+            </div>
+
+            <!-- START PANEL -->
+            <div class="tab-panel form-section" id="panelStart" role="tabpanel">
+                <div class="form-group">
+                    <label class="form-label" for="destName">Where are you going?</label>
+                    <div class="search-box">
+                        <input
+                            type="text"
+                            id="destName"
+                            class="form-control"
+                            placeholder="Search for a destination"
+                            autocomplete="off"
+                        >
+                        <div id="searchSuggestions" class="search-suggestions"></div>
+                    </div>
+                    <div id="coordsDisplay" class="coords-display" style="display: none;"></div>
+                    <button type="button" id="useMyLocation" class="search-near" style="display: none;">
+                        Search near me
+                    </button>
+                </div>
+
+                <!-- Asked once, on first use, then never again. -->
+                <div class="form-group" id="startNameGroup">
+                    <label class="form-label" for="startName">Your name</label>
+                    <input type="text" id="startName" class="form-control"
+                           placeholder="Your name" autocomplete="name" enterkeyhint="go">
+                </div>
+
+                <!-- Coordinates are set automatically by the search picker — not exposed to users -->
+                <input type="hidden" id="destLat">
+                <input type="hidden" id="destLng">
+
+                <button type="button" class="btn btn-primary btn-full" onclick="createJourney()">
+                    Create journey
+                </button>
+
+                <div id="createResult" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- JOIN PANEL -->
+            <div class="tab-panel form-section" id="panelJoin" style="display: none;" role="tabpanel">
+                <div class="form-group" id="joinNameGroup">
+                    <label class="form-label" for="joinName">Your name</label>
+                    <input type="text" id="joinName" class="form-control"
+                           placeholder="Your name" autocomplete="name">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="roomCode">Journey code</label>
+                    <input
+                        type="text"
+                        id="roomCode"
+                        class="form-control code-input"
+                        placeholder="ABC234"
+                        maxlength="6"
+                        autocapitalize="characters"
+                        autocomplete="off"
+                        inputmode="text"
+                        spellcheck="false"
+                    >
+                </div>
+
+                <button type="button" class="btn btn-primary btn-full" onclick="joinJourney()">
+                    Join journey
+                </button>
+
+                <div id="joinResult" class="result" style="display: none;"></div>
+            </div>
+
+            <!-- PAST JOURNEYS -->
+            <div class="form-section" id="pastJourneysSection" style="display: none;">
+                <h2>Past journeys</h2>
+                <p class="section-hint">Stored on this device only. Replays never leave it unless you export one.</p>
+                <div id="pastJourneys" class="journey-list"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ===================== ROOM PAGE ===================== -->
+    <div id="roomPage" class="page" style="display: none;">
+
+        <!-- Header bar -->
+        <div class="room-header">
+            <div class="room-info">
+                <h1 id="destNameDisplay">Loading...</h1>
+                <button class="room-code-btn" onclick="copyJourneyCode()" title="Tap to copy code">
+                    <span id="roomCodeDisplay">Journey code: …</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2.2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2.2"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="room-status">
+                <p id="timer" class="timer">…</p>
+                <p id="memberCount" class="member-count">1 person</p>
+            </div>
+        </div>
+
+        <!-- Location Permission Banner -->
+        <div id="locationBanner" class="location-banner" style="display: none;">
+            <div class="location-banner-card">
+                <div class="location-banner-title">Share your location for this journey</div>
+                <div class="location-banner-body">Location access lets your group see where you are while the journey is active.</div>
+                <div class="location-banner-actions">
+                    <button type="button" class="btn-banner-primary" onclick="requestLocationPermission()">
+                        Enable Location
+                    </button>
+                    <button type="button" class="btn-banner-secondary" onclick="dismissLocationBanner()">
+                        Not now
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map -->
+        <div id="map"></div>
+
+        <!-- Navigation Panel (full screen, overlaid on map) -->
+        <div id="navigationPanel" class="nav-panel" style="display: none;">
+            <div class="nav-panel-content">
+                <!-- Instruction card: direction + text + close in one unified bar -->
+                <div class="nav-instruction-container">
+                    <div class="nav-icon-wrapper">
+                        <svg id="navDirectionIcon" class="nav-direction-arrow" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 10 L50 90 M50 10 L30 30 M50 10 L70 30" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="nav-text-wrapper">
+                        <div id="navInstruction" class="nav-instruction">Starting navigation...</div>
+                        <div id="navInstructionDistance" class="nav-distance-next">Calculating route...</div>
+                    </div>
+                    <!-- X lives inside the card, right-aligned -->
+                    <button id="navExitBtn" class="nav-exit-btn" onclick="stopNavigation()" aria-label="Stop navigation">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Voice button: floating circle just below the instruction card -->
+                <button type="button" id="voiceToggle" class="nav-voice-btn"
+                        onclick="toggleVoice()" aria-pressed="true" aria-label="Toggle voice">
+                    <svg class="voice-icon-on" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor"/>
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+                    </svg>
+                    <svg class="voice-icon-off" width="20" height="20" viewBox="0 0 24 24" fill="none" style="display:none">
+                        <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" opacity="0.5"/>
+                        <line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+
+                <!-- Stats bar: floats at bottom -->
+                <div class="nav-stats-container">
+                    <div class="nav-stat">
+                        <div class="nav-stat-label">Distance</div>
+                        <div id="navDistance" class="nav-stat-value">-</div>
+                    </div>
+                    <div class="nav-stat-divider"></div>
+                    <div class="nav-stat">
+                        <div class="nav-stat-label">ETA</div>
+                        <div id="navETA" class="nav-stat-value">-</div>
+                    </div>
+                    <div class="nav-stat-divider"></div>
+                    <div class="nav-stat">
+                        <div class="nav-stat-label">Speed</div>
+                        <div id="navSpeed" class="nav-stat-value">-</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Bottom sheet -->
+        <div class="bottom-sheet" id="bottomSheet">
+            <div class="sheet-header" onclick="toggleBottomSheet()">
+                <!-- Drag handle -->
+                <div class="sheet-drag-pill"></div>
+                <!-- Peek row: visible when collapsed, fades when expanded -->
+                <div class="sheet-peek-row">
+                    <span class="sheet-peek-title">Your group</span>
+                    <span class="sheet-peek-count" id="sheetPeekCount">1 person</span>
+                </div>
+                <!-- Expanded header row -->
+                <div class="sheet-expanded-row">
+                    <h3 class="sheet-full-title">Your group</h3>
+                    <svg class="collapse-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="sheet-content">
+                <div id="ridersList" class="riders-list">
+                    <p class="group-empty"></p>
+                </div>
+
+                <div id="quickMessages" class="quick-messages" role="group" aria-label="Quick messages"></div>
+
+                <div class="action-buttons">
+                    <!-- Primary navigation action -->
+                    <button class="btn btn-primary btn-full" onclick="startNavigation()" id="startNavBtn">
+                        Start navigation
+                    </button>
+                    <button class="btn btn-danger btn-full" onclick="stopNavigation()" id="stopNavBtn" style="display: none;">
+                        Stop navigation
+                    </button>
+
+                    <!-- Secondary actions row -->
+                    <div class="action-row">
+                        <button class="btn btn-secondary" onclick="shareCurrentInvite()">
+                            Share invite
+                        </button>
+                        <button class="btn btn-secondary" onclick="toggleDirections()" id="directionsBtn">
+                            Directions
+                        </button>
+                    </div>
+
+                    <!-- Danger zone -->
+                    <button class="btn btn-danger btn-full" onclick="leaveJourney()">
+                        Leave journey
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/config.js"></script>
+    <script src="assets/app.js"></script>
+    <script src="assets/crypto.js"></script>
+    <script src="assets/validate.js"></script>
+    <script src="assets/store.js"></script>
+    <script src="assets/journey.js"></script>
+    <script src="assets/export.js"></script>
+    <script src="assets/search.js"></script>
+    <script src="assets/index.js"></script>
+    <script src="assets/destination-picker.js"></script>
+    <script src="assets/polish.js"></script>
+</body>
+</html>

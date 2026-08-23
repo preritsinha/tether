@@ -1,0 +1,14 @@
+node_modules/
+
+# Gradle build output
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+android/.idea/
+*.apk
+*.aab
+*.keystore
+
+# NOTE: www/ is deliberately NOT ignored. It is the app's own source now, not
+# generated output. Edit it directly; nothing syncs into it from ../web.

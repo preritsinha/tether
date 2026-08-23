@@ -1,21 +1,29 @@
 # Waysera — Every journey, together.
 
-Waysera is a lightweight live group-navigation app for people heading to the same destination. Start a temporary journey, share a link or six-character code, and see your group on one live map — no account required.
+Waysera is a live group-navigation app for people heading to the same place.
+Start a journey, share a six-character code, and everyone appears on one map as
+they travel. No account, no sign-up.
 
-It is built so that **the server cannot see your journey**. Positions, names, messages and destinations are encrypted on your device. The server forwards bytes it has no way to read, and stores nothing at all.
+It is built so that **we cannot see your journey**. Positions, names, messages
+and destinations are encrypted on your device before they leave it.
 
 ---
 
 ## What it does
 
-- **Live group map.** Everyone's position, speed and heading, plus how far each person is from you and from the destination.
-- **Journey codes.** Six characters, no signup. Share a link, or read the code out loud.
-- **Turn-by-turn navigation**, with voice guidance and automatic rerouting.
-- **Quick messages.** Tap to send "Pulling over", "Need fuel", "Go ahead without me". Tap-only, so nobody types while driving.
-- **Journey replay.** Scrub back through a finished journey at 1x to 10x, with everything that happened laid out on a timeline.
-- **Export.** Take a journey away as JSON or GPX.
+- **One live map for the whole group.** Everyone's position, speed and heading,
+  plus how far each person is from you and from the destination.
+- **Six-character codes.** Read one out loud, or send a link. Nothing to sign up
+  for.
+- **Turn-by-turn navigation** with voice guidance, and it reroutes if you come
+  off course.
+- **Tap-only messages.** "Pulling over", "Need fuel", "Go ahead without me". No
+  typing while driving.
+- **Journey replay.** Scrub back through a finished journey at up to 10× and see
+  what happened, and when.
+- **Export.** Take a journey away as JSON, or as GPX for any mapping tool.
 
-Everything is stored on your device. Journeys you have finished stay in a list until you delete them.
+Finished journeys stay in a list on your device until you delete them.
 
 ---
 
@@ -24,182 +32,131 @@ Everything is stored on your device. Journeys you have finished stay in a list u
 The server is a **relay**, not a database.
 
 ```
-Client A ──encrypted──┐                    ┌──encrypted── Client B
-                      ├─→  Waysera relay  ─┤
-Client C ──encrypted──┘   (forwards bytes) └──encrypted── Client D
+You  ──encrypted──┐                    ┌──encrypted── Priya
+                  ├─→  Waysera relay  ─┤
+Sam  ──encrypted──┘   (forwards bytes) └──encrypted── Alex
 ```
 
-Each journey has a key generated on the device that created it. That key travels in the **fragment** of the invite link, the part after `#`, which browsers never send to any server. The relay only ever sees an opaque channel identifier and encrypted payloads it cannot open.
+Every journey has a key made on the device that started it. That key travels in
+the part of a link after the `#`, which browsers never send to any server. The
+relay only ever sees scrambled bytes and has no way to unscramble them. It
+stores nothing.
 
-Joining by typing a code rather than opening a link means you have no key yet, so an existing member has to grant you one. That exchange requires somebody to look at your name and tap **Allow**.
+If you join by typing a code instead of opening a link, you have no key yet — so
+somebody already in the journey has to look at your name and tap **Allow**. That
+tap is deliberate. It is the only thing standing between your group and a
+stranger who guessed the code.
 
 ### What this does not mean
 
-Waysera cannot see your journey. That is not the same as your location never leaving your device, and it would be dishonest to claim otherwise:
+Waysera cannot see your journey. That is not the same as your location never
+leaving your device, and it would be dishonest to claim otherwise:
 
 | Service | What it receives |
 | --- | --- |
-| Mapbox | Tile requests, revealing the area you are looking at |
-| Photon (Komoot) | Every destination search |
-| openstreetmap.de | Origin **and** destination for every route |
+| CARTO | Requests for map tiles, which reveal the area you are looking at |
+| Photon (Komoot) | Every destination you search for, and roughly where you are |
+| openstreetmap.de | Your start **and** destination, for every route |
 
-Replacing these with self-hosted equivalents is on the roadmap, not in the product today.
+Photon is the sharpest of the three: it learns both where you are and where you
+are going. That is the price of search that finds the cafe down the road instead
+of a village in Norway. It is a deliberate trade, not an oversight.
 
-We also do not claim: guaranteed security, suitability for emergencies, background tracking while the browser is closed, or unlimited group size.
-
----
-
-## Running it locally
-
-```bash
-./start.sh
-```
-
-That opens the relay and the web client in separate terminal windows. To stop:
-
-```bash
-./stop.sh
-```
-
-### Manually
-
-**Relay:**
-
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-
-**Web client**, in a second terminal:
-
-```bash
-cd web
-python3 -m http.server 3000
-```
-
-Then open `http://localhost:3000`.
-
-WebCrypto and IndexedDB both need a secure context. `localhost` counts as one, a bare LAN IP does not, so testing on a phone over Wi-Fi needs HTTPS.
+We also do not claim: guaranteed security, suitability for emergencies, or
+unlimited group size.
 
 ---
 
-## Project structure
+## Getting the app
 
-```
-waysera/
-├── backend/                 # The relay. It stores nothing.
-│   ├── main.py              # Health check + WebSocket relay
-│   ├── services/relay.py    # Channel registry and limits
-│   └── tests/               # pytest
-│
-├── web/                     # Client. No build step.
-│   ├── index.html
-│   ├── replay.html
-│   ├── tests.html           # Browser test runner
-│   └── assets/
-│       ├── crypto.js        # AES-GCM, ECDH handoff, invite links
-│       ├── journey.js       # Relay session and protocol
-│       ├── store.js         # IndexedDB
-│       ├── validate.js      # Peer input validation
-│       ├── export.js        # JSON and GPX
-│       ├── replay.js        # Playback
-│       ├── index.js         # App
-│       └── app-mobile.css   # Design system
-│
-├── tools/                   # Test harnesses
-├── BRAND.md                 # Brand source of truth
-├── start.sh
-└── stop.sh
-```
+### On Android
+
+**There is no download yet.** The app is built and working, but it has not been
+released — the version in this repository is a development build that points at
+a test server, so it cannot reach anybody else.
+
+When there is a release it will appear here, and installing it will mean
+downloading one file and tapping it. Android allows that without any store or
+account; your phone will ask you to confirm first, which is normal.
+
+### On iPhone
+
+There is no iOS app. Apple does not allow apps to be installed outside the App
+Store, so this needs a different route and has not been built yet.
+
+### In a browser, today
+
+Waysera runs in any modern mobile browser with no install at all — that is where
+it started. The one thing a browser cannot do is keep sharing your position once
+you switch away from the tab or your screen locks, which is exactly when a group
+most wants to see you moving. That limitation is the reason the Android app
+exists.
 
 ---
 
-## The relay API
+## Using it
 
-Two endpoints. That is the whole surface.
+**Starting a journey.** Search for where you are going, enter your name the
+first time, and tap *Create journey*. You land straight on the map with a code
+to share.
 
-```http
-GET /v1/health
-```
+**Joining one.** Open the link somebody sent you, or tap *Join* and type the
+six-character code. If you typed a code, wait a moment — somebody already in the
+journey has to let you in.
 
-```
-WS /v1/relay/{channel_id}
-```
+**On the way.** Everybody shows on the map with how far they still have to go.
+Tap *Start navigation* for turn-by-turn directions. The quick-message buttons
+send a short note without typing.
 
-`channel_id` is the lowercase SHA-256 of a journey code, worked out on the client, so the code itself never reaches the server. Anything that is not a 64-character hex digest is refused.
+**Arriving.** Once everybody has reached the destination the journey finishes on
+its own.
 
-Every frame received is forwarded verbatim to the channel's other sockets and to nobody else. The sender never receives its own frames back. The relay never parses, logs, or retains a payload.
-
-Limits: 64 KB per frame, 20 messages per second per socket, 10 sockets per channel.
-
----
-
-## Tests
-
-```bash
-# Relay
-cd backend && .venv/bin/python -m pytest
-
-# Crypto, storage, validation, session, export, replay — runs in real Chrome
-python3 tools/run_browser_tests.py
-
-# Loads the actual page and drives a journey creation
-backend/.venv/bin/python tools/smoke_app.py
-
-# Two headless browsers and a live relay, end to end
-backend/.venv/bin/python tools/integration_test.py
-```
-
-The browser suites run in Chrome rather than Node for a reason. The code under test needs WebCrypto **and** IndexedDB, and IndexedDB has no faithful Node equivalent, so a polyfill would end up testing the polyfill.
-
-The integration test also asserts the property everything else rests on. It joins a live journey as an unauthorised third party and checks that what crosses the wire is unreadable.
+**Afterwards.** Finished journeys stay on the home screen. Open one to replay it
+or export it.
 
 ---
 
-## Deploying
+## What it will not do
 
-**Relay** — a Render web service, root directory `backend`, start command:
-
-```
-uvicorn main:app --host 0.0.0.0 --port $PORT
-```
-
-Set `ALLOWED_ORIGINS` to your frontend origin. Note that WebSocket upgrades are not subject to CORS, and the relay uses no cookies or credentials, so this only covers the health check.
-
-**Web client** — a Render static site, root directory `web`, publish directory `.`.
-
-Before switching domains, add the new one to the Mapbox token's URL restrictions. The token in `web/assets/config.js` is a publishable `pk.` token. It is served to every visitor by design, so URL restrictions rather than secrecy are what protect it.
-
----
-
-## Limitations
-
-- **Background tracking is not possible on the web.** Browsers suspend geolocation when a tab is hidden. A wake lock keeps the screen alive during navigation, but only a native app solves the rest.
-- **Journey expiry is advisory.** With no server, nothing enforces it.
-- **Nothing survives losing your device.** There is no copy anywhere else. That is the trade the privacy model makes, so export a journey if you want to keep it.
+- **It will not track anyone quietly.** People appear on the map only while they
+  have a journey open, and only to the people in it.
+- **On the web, it stops when you look away.** Browsers suspend location for
+  hidden tabs. The Android app keeps going, and shows a permanent notification
+  while it does — Android requires that, and it is the honest signal that
+  something is using your location.
+- **Nothing survives losing your phone.** There is no copy anywhere else. That
+  is the trade the privacy model makes, so export a journey if you want to keep
+  it.
+- **A journey ends when everyone arrives, or when the last person leaves.**
 
 ---
 
-## Tech
+## Questions
 
-FastAPI and WebSockets on the relay. Vanilla JavaScript on the client, with no framework and no build step. Leaflet with Mapbox tiles, OSRM routing, WebCrypto and IndexedDB.
+**Do I need an account?** No. There is nothing to sign up for and no password.
+
+**Can Waysera see where I am?** No. The relay forwards scrambled bytes it has no
+key for. Map and search providers do see some of it — the table above says
+exactly what.
+
+**What if I lose signal?** The app reconnects on its own. Your group sees you go
+stale, then offline, and you reappear where you are when signal returns.
+
+**Can someone guess my code?** They would have to guess six characters and then
+be let in by somebody already there. Refusing a request tells them nothing.
+
+**Is it free?** Yes, and there is nothing to pay for. It is open source under
+the MIT licence.
+
+---
+
+## For developers
+
+Architecture, the relay protocol, build instructions and the test suites are in
+[DEVELOPING.md](DEVELOPING.md).
 
 ---
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-Waysera depends on Leaflet (BSD-2), Leaflet Routing Machine (ISC), FastAPI (MIT),
-Starlette, Uvicorn and websockets (BSD-3), all of which permit this. Map data,
-routing and geocoding come from OpenStreetMap under ODbL, which requires the
-attribution shown on the map.
-
----
-
-*Waysera was previously developed under the working name Tether.*
-
-Built for people who are tired of asking, "Where are you?"

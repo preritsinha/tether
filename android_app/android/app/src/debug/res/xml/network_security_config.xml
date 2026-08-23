@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DEBUG ONLY. This file lives under src/debug/, so it is compiled into debug
+  builds and cannot reach a release APK.
+
+  Android has blocked cleartext HTTP by default since API 28. The relay runs on
+  the developer's own machine over plain http/ws during local testing, so the
+  loopback aliases below are exempted and nothing else is.
+
+  10.0.2.2  - the emulator's alias for the host machine's 127.0.0.1
+  10.0.3.2  - the same thing under Genymotion
+  localhost - the emulator's own loopback
+
+  A real deployment uses wss:// to a public relay and needs none of this, which
+  is why the exemption is scoped to these addresses rather than set globally
+  with cleartextTrafficPermitted="true".
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">10.0.3.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>
